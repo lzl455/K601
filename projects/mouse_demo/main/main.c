@@ -320,7 +320,8 @@ int main(void)
                     break;
 
                 exled_ctrl = 0;                 // 外挂显示屏的时候，用显示屏提示，否则用低压灯提示
-                exled = 0;                      // HM-1515CWB-1 无充电图标, 灭屏提示
+                exled = 0;
+                exled |= bled_BAT;              // 低压关机: 电池图标闪一下
                 exio_ctrl = 0;
                 exLogo_send();
                 delayus(500000);

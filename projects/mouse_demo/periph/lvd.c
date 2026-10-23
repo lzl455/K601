@@ -377,7 +377,7 @@ void led_hint_process(void)
     if(0 != (bat_status&blvd_power_on))
         return;
 
-    exled &= 0xFFC00000;
+    exled &= 0xFFC000F9;                        // 只清数字段, 图标位(bit0,3~7)保留
     if(100 == bat_value)
     {
         exled |= (0x001FBF06);                  // 1 0 0
@@ -417,11 +417,34 @@ void led_hint_process(void)
             exled |= bled_3_G;
     }
 
+    exled |= bled_PERCENT;    // %
+
     if(0 == (bat_status&bcharging))
     {
         if(iLOW_POWER >= bat_value)
-        {
-            if(0<bat_value)                     // 新屏无低电图标, 仅保留时序与自动关机流程
+        {                                       // 低电: 电池图标亮0.5s/灭1.5s闪烁
+            if(exled&bled_BAT)
+            {
+                exled |= bled_BAT;
+                if(mMS_TO_TICK(500) < (rtc_cur_value - lvd_hint_time_count))
+                {
+                    exled &= ~bled_BAT;
+                    lvd_hint_time_count = rtc_cur_value;
+                    exled_rtc_count=0;
+                }
+            }
+            else
+            {
+                exled &= ~bled_BAT;
+                if(mMS_TO_TICK(1500) < (rtc_cur_value - lvd_hint_time_count))
+                {
+                    exled |= bled_BAT;
+                    lvd_hint_time_count = rtc_cur_value;
+                    exled_rtc_count=0;
+                }
+            }
+
+            if(0<bat_value)
 			    return;
 
             power_off_time_count++;				// 时间单位16ms
@@ -440,6 +463,7 @@ void led_hint_process(void)
         {
             lvd_hint_time_count = 0;
             power_off_time_count = 0;
+	        exled &= ~bled_BAT;
         }
     }
     else
@@ -454,9 +478,11 @@ void led_hint_process(void)
             }
 
             power_off_time_count = 0;
+            exled &= ~bled_BAT;
         }
         else
-        {									// 充电中, 新屏无充电图标
+        {									// 充电中: 电池图标常亮
+            exled |= bled_BAT;
             charge_ok_delay_count = 200;
         }
     }

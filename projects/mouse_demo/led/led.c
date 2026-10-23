@@ -229,7 +229,14 @@ void led_status_hint(void)
 *******************************************************************************/
 void device_led_on(void)
 {
-                                                // HM-1515CWB-1 无模式指示灯, 保留空函数维持闪烁流程
+    exled &= ~(bled_24G|bled_BT1|bled_BT2);
+
+    if(iDEVICE_TYPE_BT0 == device_type)
+        exled |= bled_BT1;
+    else if(iDEVICE_TYPE_BT1 == device_type)
+        exled |= bled_BT2;
+    else if(iDEVICE_TYPE_24G == device_type)
+        exled |= bled_24G;
 }
 
 /*******************************************************************************
@@ -241,6 +248,7 @@ void device_led_on(void)
 *******************************************************************************/
 void device_led_off(void)
 {
+    exled &= ~(bled_24G|bled_BT1|bled_BT2);
 }
 
 /*******************************************************************************
