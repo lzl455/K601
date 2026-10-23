@@ -111,7 +111,9 @@ void rf_sync_ok_process(void)
     else
         report_24g = ((report_dpi[key_mode]>>4)&0x03);
     m_tx_count = 0;
+#if (iWHEEL_ENCODER_EN)
     drv_encoder_control(OM_ENCODER, ENCODER_CONTROL_START, NULL);
+#endif
     exled_rtc_count=0;
     exio_ctrl = 0;
 
