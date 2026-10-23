@@ -175,8 +175,11 @@
 #define USB_DN_PIN              (0*8+2)
 #define USB_DP_PIN              (0*8+3)
 
-#define WHA_A_PIN               (2*8+0)
-#define WHA_B_PIN               (2*8+1)
+#define WHA_A_PIN               (2*8+0)         // 与 MODE_24G_PIN 同脚, 本机无滚轮
+#define WHA_B_PIN               (2*8+1)         // 空脚(输出低)
+
+#define iWHEEL_ENCODER_EN       0               // 1: 有外挂滚轮(编码器复用 P20/P21); 0: 无滚轮, 编码器不开
+                                                // P20 是模式开关, 开编码器会把拨档误计成滚轮
 //
 //----------------------------------------------
 // 调试IO

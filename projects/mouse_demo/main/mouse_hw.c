@@ -109,8 +109,10 @@ pmu_lpm_t pm_checker_callback(void)
             exled_ctrl = 0x02;
             exLogo_send();
 
+#if (iWHEEL_ENCODER_EN)
             drv_encoder_control(OM_ENCODER, ENCODER_CONTROL_STOP, NULL);
             DRV_RCC_CLOCK_ENABLE(RCC_CLK_ENCODER, 0U);
+#endif
             mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
             drv_pmu_set_low_power_mode(PMU_LPM_DEEP_SLEEP);
             while(1);        
@@ -302,8 +304,10 @@ void app_ble_evt_dispatch(uint32_t events)
             {
                 ex2_l2cap_update_conn_para(&ex2_gap_ppcp_value);
                 ex2_ll_polling_time_start();
+#if (iWHEEL_ENCODER_EN)
                 drv_encoder_control(OM_ENCODER, ENCODER_CONTROL_WAKEUP_DISABLE, NULL);
                 drv_encoder_control(OM_ENCODER, ENCODER_CONTROL_START, NULL);
+#endif
                 exled_rtc_count=0;
                 exio_ctrl = 0;
 

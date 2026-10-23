@@ -145,7 +145,7 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         mLED_VDD_DIS;
         MATRX_ALL_LOW;
         KEY_EX_LOW;
-        OM_PMU->PAD_PU_CTRL_1 = 0x08000001;  // 睡眠只留P20(MODE_24G)150K, P21空脚输出低不上拉(原0x05漏电)
+        OM_PMU->PAD_PU_CTRL_1 = 0x08000001;  // 睡眠只留P20(MODE_24G)30K, P35 150K; P21空脚输出低不上拉(原0x05漏电)
 
         drv_gpio_set_trig(OM_GPIO0, (1<<KEY_R0_PIN)|(1<<KEY_R1_PIN)|(1<<KEY_R2_PIN)|(1<<KEY_R3_PIN)| \
                                     (1<<KEY_R4_PIN)|(1<<KEY_R5_PIN)|(1<<KEY_R6_PIN)|(1<<KEY_R7_PIN)| \
@@ -164,7 +164,9 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         drv_pmu_wakeup_pin_set(WHA_B_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
         NVIC_SetPriority(WAKEUP_GPIO0_IRQn, RTE_GPIO0_IRQ_PRIORITY);
         NVIC_EnableIRQ(WAKEUP_GPIO0_IRQn);
+#if (iWHEEL_ENCODER_EN)
         OM_ENCODER->EN |= (ENCODER_EN_INTERRUPT_EN_MASK|ENCODER_EN_WAKEUP_EN_MASK);
+#endif
     }
     else {
         drv_pmu_wakeup_pin_set(KEY_R0_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
@@ -180,9 +182,11 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         drv_pmu_wakeup_pin_set(WHA_B_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
         NVIC_DisableIRQ(WAKEUP_GPIO0_IRQn);
 
-        OM_PMU->PAD_PU_CTRL_1 = 0x080AAA21;
+        OM_PMU->PAD_PU_CTRL_1 = 0x080AA821;
         MATRX_ALL_IN;
+#if (iWHEEL_ENCODER_EN)
         OM_ENCODER->EN &= ~(ENCODER_EN_INTERRUPT_EN_MASK|ENCODER_EN_WAKEUP_EN_MASK);
+#endif
     }
 
     OM_CRITICAL_END();
@@ -292,8 +296,9 @@ int main(void)
     OM_RCC->CLKGATE |= RCC_DEV_CLK_GATE_GPIO_CLK_GATE_MASK;
 //------------------------------------------------------------------------------
 // 不同个案，需要根据实际原理图设置初始化IO状态
-    OM_PMU->PAD_PU_CTRL = 0x00AAAA00;       // KEY_R0~R7(P04~P13)行输入30K上拉, 0x00A80A00误删R2/R3/R4
-    OM_PMU->PAD_PU_CTRL_1 = 0x080AAA21;     // P21清150K上拉(空脚输出低,原0x...25漏电22uA), P20保留
+    OM_PMU->PAD_PU_CTRL = 0x00AAAA00;       // KEY_R0~R7(P04~P13)行输入150K上拉, 0x00A80A00误删R2/R3/R4
+    OM_PMU->PAD_PU_CTRL_1 = 0x080AA821;     // 上拉编码 01=30K 10=150K: P20 30K, P22 150K, P25~P27/P30/P31 列线150K, P35 150K
+                                            // P21/P24 输出低, 不加上拉(否则 P21 30K 漏电约110uA, P24 150K 约22uA)
     OM_PMU->PAD_PD_CTRL = 0x1000000C;  
     OM_PMU->PAD_BUF_EN &= ~LVD_PIN_MASK;
     OM_PMU->PAD_BUF_EN |= (1<<MODE_BT_PIN | 1<<MODE_24G_PIN);
@@ -344,7 +349,9 @@ int main(void)
     exled = 0;
     exLogo_send();                              // 初始化唤醒外挂芯片
 
+#if (iWHEEL_ENCODER_EN)
     encoder_init();                             // 有外挂滚轮的时候调用，没有的时候屏蔽此行
+#endif
     bat_init();
 
     laod_flash_cfg();

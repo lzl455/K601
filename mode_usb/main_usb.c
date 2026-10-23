@@ -45,8 +45,10 @@ void mouse_usb_init(void)
     __enable_irq();
     sleep_into_work_rtc = drv_rtc_read(OM_RTC);
     busb_valid = false;
+#if (iWHEEL_ENCODER_EN)
     drv_encoder_control(OM_ENCODER, ENCODER_CONTROL_WAKEUP_DISABLE, NULL);
     drv_encoder_control(OM_ENCODER, ENCODER_CONTROL_START, NULL);
+#endif
 }
 
 /******************************************************************************

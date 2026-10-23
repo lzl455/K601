@@ -44,6 +44,7 @@ uint32_t                    wheel_press_time_count;
 *******************************************************************************/
 void wheel_scan(void)
 {
+#if (iWHEEL_ENCODER_EN)
     if(OM_ENCODER->VALID&ENCODER_VALID_CNT_MASK)
     {
         wheel_data = OM_ENCODER->CNT;
@@ -52,6 +53,7 @@ void wheel_scan(void)
         else
             wheel_data &= 0x0f;
     }
+#endif
 
     rtc_cur_value = drv_rtc_read(OM_RTC);
     if(0==(wheel_status&bwheel_press))
