@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh api repos/lzl455/K601/pulls/*)",
+      "Bash(gh api -X PUT repos/lzl455/K601/pulls/*/merge *)"
+    ]
+  }
+}
