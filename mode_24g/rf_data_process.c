@@ -81,6 +81,8 @@ void rf_tx1_idle_callback(void)
     lvd_scan_count++;
     if(4==(lvd_scan_count&0x07))
         device_led_process();                     // 16ms
+    else if(1==(lvd_scan_count&0x07))
+        led_hint_process();                       // 电量/充电图标/低电关机
     if(0==(lvd_scan_count&0x01))
         logo_process();
 }
@@ -90,6 +92,8 @@ void rf_tx1_irq_callback(void)
     lvd_scan_count++;
     if(4==(lvd_scan_count&0x07))
         device_led_process();
+    else if(1==(lvd_scan_count&0x07))
+        led_hint_process();
     if(0==(lvd_scan_count&0x01))
         logo_process();
 }

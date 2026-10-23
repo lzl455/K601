@@ -128,8 +128,8 @@ __RAM_CODE void RTC_IRQHandler_24G(void)
                 rtc_reload_value += iTICK_INIT_VALUE;
                 while(1)
                 {
-                    if(rtc_reload_value >= (i+5))
-                        break;
+                    if((int32_t)(rtc_reload_value - (i+5)) >= 0)
+                        break;                  // 相减比较, 计数器回绕时仍正确
                     rtc_reload_value += iTICK_INIT_VALUE;
                     if(0 == (sys_tick_count&0x01))
                     {

@@ -206,6 +206,7 @@ void charge_only_process(void)
             }
 
             delayus(20000);
+            sys_tick_count += 20;           // 充电档没有 RTC 节拍, 手动计时, 供 bat_check() 上电稳定等待
         }
         else
         {                                   // 未插线：关屏，STOP1 等事件唤醒
