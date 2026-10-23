@@ -22,8 +22,8 @@
 //           bit4=PB5(脚2)  bit5=PA0(脚3)  bit6=PA1(脚4)
 // BYTE8   = SUM = 0x100 - (BYTE2..BYTE7 之和的低8位)
 //
-// 驱动板按"灯号"驱动 30 颗 LED(6 脚交叉复用), DIGn 字节不是"第 n 位数码管",
-// 而是灯号: DIG1 bit0..7 = 灯1..8, DIG2 = 灯9..16, DIG3 = 灯17..24, DIG4 = 灯25..30。
+// 驱动板按"灯号"驱动 30 颗 LED(6 脚交叉复用), exled bit(n-1) = 灯n,
+// 发送时按字节拆成 DIG1(灯1~8) DIG2(灯9~16) DIG3(灯17~24) DIG4(灯25~30)。
 // 灯号 = 驱动说明书"共阴数码管"图中 (阳极脚, 阴极脚) 的组合。
 //
 // 对照 HM-1515CWB-1 电原理图(阳极脚->阴极脚), 物理排列(左->右) DIG1 DIG2 DIG3:
@@ -34,49 +34,35 @@
 //   灯23~30 屏上无对应。
 //
 extern uint8_t                  exled_ctrl;
-//{
-    #define bdisp_MODE_GONG_YIN 0x00                // 共阴(现用, 字库用共阴表)
-    #define bdisp_MODE_GONG_YANG 0x01               // 共阳(若显示反了改用此模式+共阳字库)
-    #define bdisp_MODE_OFF       0x02               // 关机休眠帧
-//}
 
 extern uint32_t                 exled;
 //{
-    // exled bit(n-1) = 灯n, 发送时按字节拆成 DIG1~DIG4
-    #define bled_DIG1_SHIFT      0                   // 屏 DIG1: 百位"1"(B1/C1) + 图标
-    #define bled_DIG2_SHIFT      8                   // 屏 DIG2: 十位
-    #define bled_DIG3_SHIFT      15                  // 屏 DIG3: 个位(灯16起, 不是字节对齐)
+    //#define NULL                (1<<23)         // 灯24 屏上无对应
+    //#define NULL                (1<<22)         // 灯23 屏上无对应
+    #define bled_3_G            (1<<21)         // 个位(屏DIG3)
+    #define bled_3_F            (1<<20)
+    #define bled_3_E            (1<<19)
+    #define bled_3_D            (1<<18)
+    #define bled_3_C            (1<<17)
+    #define bled_3_B            (1<<16)
 
-    #define bled_DIG1_MASK       0x000000FFul
-    #define bled_DIG2_MASK       0x00007F00ul
-    #define bled_DIG3_MASK       0x003F8000ul
-    #define bled_DIG_ALL         0x003FFFFFul
+    #define bled_3_A            (1<<15)
+    #define bled_2_G            (1<<14)         // 十位(屏DIG2)
+    #define bled_2_F            (1<<13)
+    #define bled_2_E            (1<<12)
+    #define bled_2_D            (1<<11)
+    #define bled_2_C            (1<<10)
+    #define bled_2_B            (1<<9)
+    #define bled_2_A            (1<<8)
 
-    #define bled_dig1_A          (1u<<(bled_DIG1_SHIFT+0))    // 图标 A1
-    #define bled_dig1_B          (1u<<(bled_DIG1_SHIFT+1))    // 百位"1"
-    #define bled_dig1_C          (1u<<(bled_DIG1_SHIFT+2))    // 百位"1"
-    #define bled_dig1_D          (1u<<(bled_DIG1_SHIFT+3))    // 图标 D1
-    #define bled_dig1_E          (1u<<(bled_DIG1_SHIFT+4))    // 图标 E1
-    #define bled_dig1_F          (1u<<(bled_DIG1_SHIFT+5))    // 图标 F1
-    #define bled_dig1_G          (1u<<(bled_DIG1_SHIFT+6))    // 图标 G1
-    #define bled_dig1_H          (1u<<(bled_DIG1_SHIFT+7))    // 图标 H1
-    #define bled_hundred_1       (bled_dig1_B|bled_dig1_C)
-
-    #define bled_dig2_A          (1u<<(bled_DIG2_SHIFT+0))
-    #define bled_dig2_B          (1u<<(bled_DIG2_SHIFT+1))
-    #define bled_dig2_C          (1u<<(bled_DIG2_SHIFT+2))
-    #define bled_dig2_D          (1u<<(bled_DIG2_SHIFT+3))
-    #define bled_dig2_E          (1u<<(bled_DIG2_SHIFT+4))
-    #define bled_dig2_F          (1u<<(bled_DIG2_SHIFT+5))
-    #define bled_dig2_G          (1u<<(bled_DIG2_SHIFT+6))
-
-    #define bled_dig3_A          (1u<<(bled_DIG3_SHIFT+0))
-    #define bled_dig3_B          (1u<<(bled_DIG3_SHIFT+1))
-    #define bled_dig3_C          (1u<<(bled_DIG3_SHIFT+2))
-    #define bled_dig3_D          (1u<<(bled_DIG3_SHIFT+3))
-    #define bled_dig3_E          (1u<<(bled_DIG3_SHIFT+4))
-    #define bled_dig3_F          (1u<<(bled_DIG3_SHIFT+5))
-    #define bled_dig3_G          (1u<<(bled_DIG3_SHIFT+6))
+    #define bled_1_H            (1<<7)          // 图标 H1
+    #define bled_1_G            (1<<6)          // 图标 G1
+    #define bled_1_F            (1<<5)          // 图标 F1
+    #define bled_1_E            (1<<4)          // 图标 E1
+    #define bled_1_D            (1<<3)          // 图标 D1
+    #define bled_1_C            (1<<2)          // 百位"1"
+    #define bled_1_B            (1<<1)          // 百位"1"
+    #define bled_1_A            (1<<0)          // 图标 A1
 //}
 extern uint8_t                  exio_ctrl;
 //{

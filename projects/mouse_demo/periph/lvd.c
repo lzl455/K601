@@ -370,23 +370,51 @@ __RAM_CODE void bat_check(void)
 ******************************************************************************/
 void led_hint_process(void)
 {
+    uint8_t i;
+
     rtc_cur_value = drv_rtc_read(OM_RTC);
     bat_check();
     if(0 != (bat_status&blvd_power_on))
         return;
 
-                                                // HM-1515CWB-1(左->右): 百位"1"=屏DIG1的B1/C1 十位=屏DIG2 个位=屏DIG3
-    exled &= ~bled_DIG_ALL;                     // 字库 A=bit0..G=bit6, 按灯号移位(见 exLed.h)
+    exled &= 0xFFC00000;
     if(100 == bat_value)
     {
-        exled |= bled_hundred_1
-               | ((uint32_t)led_no_tbl[0]<<bled_DIG2_SHIFT)
-               | ((uint32_t)led_no_tbl[0]<<bled_DIG3_SHIFT);
+        exled |= (0x001FBF06);                  // 1 0 0
     }
     else
     {
-        exled |= ((uint32_t)led_no_tbl[bat_value/10])<<bled_DIG2_SHIFT;
-        exled |= ((uint32_t)led_no_tbl[bat_value%10])<<bled_DIG3_SHIFT;
+        i = led_no_tbl[bat_value/10];
+        if(i&(1<<0))
+            exled |= bled_2_A;
+        if(i&(1<<1))
+            exled |= bled_2_B;
+        if(i&(1<<2))
+            exled |= bled_2_C;
+        if(i&(1<<3))
+            exled |= bled_2_D;
+        if(i&(1<<4))
+            exled |= bled_2_E;
+        if(i&(1<<5))
+            exled |= bled_2_F;
+        if(i&(1<<6))
+            exled |= bled_2_G;
+
+        i = led_no_tbl[bat_value%10];
+        if(i&(1<<0))
+            exled |= bled_3_A;
+        if(i&(1<<1))
+            exled |= bled_3_B;
+        if(i&(1<<2))
+            exled |= bled_3_C;
+        if(i&(1<<3))
+            exled |= bled_3_D;
+        if(i&(1<<4))
+            exled |= bled_3_E;
+        if(i&(1<<5))
+            exled |= bled_3_F;
+        if(i&(1<<6))
+            exled |= bled_3_G;
     }
 
     if(0 == (bat_status&bcharging))
