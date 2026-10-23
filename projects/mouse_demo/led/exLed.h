@@ -34,6 +34,10 @@
 //   屏 DIG3  A~G : 4-1 4-2 4-3 4-5 4-6 5-1 5-2     = 灯16~22 (个位, 跨 DIG2.bit7 和 DIG3)
 //   灯23~30 屏上无对应。
 //
+#define CMD_HEARDER_0           0x00
+#define CMD_HEARDER_1           0xAA
+#define CMD_CS_SUM              0x00
+
 extern uint8_t                  exled_ctrl;
 
 extern uint32_t                 exled;

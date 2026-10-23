@@ -635,11 +635,6 @@
               <FilePath>..\led\led.c</FilePath>
             </File>
             <File>
-              <FileName>logo_mode.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\led\logo_mode.c</FilePath>
-            </File>
-            <File>
               <FileName>exLed.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\led\exLed.c</FilePath>

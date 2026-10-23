@@ -265,15 +265,10 @@ void hid_get_fw_mode_info(void)
     in_report_data[6] = report_dpi[2];
     in_report_data[7] = report_dpi[3];
 
-    in_report_data[0x08] = (led_cur_mode&0x1F);
-    if(true == bled_bright_en)
-        in_report_data[0x08] |= (1<<6);
-
+    in_report_data[0x08] = 0;                   // 灯光模式/亮度/速度/颜色: 本机无背光
     in_report_data[0x09] = 0;
-    in_report_data[0x0A] = (led_light_lev&0x07);
-    in_report_data[0x0A] |= ((led_speed_lev<<4)&0x70);
-
-    in_report_data[0x0B] = (led_rgb_index&0x07);
+    in_report_data[0x0A] = 0;
+    in_report_data[0x0B] = 0;
 
     in_report_data[0x0C] = sleep_time_24g;
     in_report_data[0x0D] = sleep_time_ble;
@@ -556,59 +551,7 @@ __attribute__((noinline)) void hid_process(void)
                 report_usb = ((report_dpi[0]>>6)&0x03);
 
 //----------------------------------------------
-// 灯光配置
-                if(out_report_data[8]&(1<<7))
-                {				                // 设置模式
-					if((iMODE_LED_MAX >= (out_report_data[8]&0x1F))
-					    &&(led_cur_mode != (out_report_data[8]&0x1F)))
-                    {
-					    led_cur_mode = (out_report_data[8]&0x1F);
-                        bsave_status = true;
-					}
-
-                    if(out_report_data[8]&(1<<6))
-                    {
-                        if(false == bled_bright_en)
-                        {
-                            bled_bright_en = true;
-                            bsave_status = true;
-                        }
-                    }
-                    else
-                    {
-                        if(true == bled_bright_en)
-                        {
-                            bled_bright_en = false;
-                            bsave_status = true;
-                        }
-                    }
-				}
-                if(out_report_data[0x0A]&(1<<3))
-                {				                // led亮度
-                    if(((out_report_data[10])&0x07) != led_light_lev)
-                    {
-                        led_light_lev = (out_report_data[0x0A]&0x07);
-                        if(iLED_LEV_MAX < led_light_lev)
-                            led_light_lev = iLED_LEV_MAX;
-                        bsave_cfg_dpi = true;
-                    }
-				}
-                if(out_report_data[0x0A]&(1<<7))
-                {				                // led速度
-                    if(((out_report_data[0x0A]>>4)&0x07) != led_speed_lev)
-                    {
-                        led_speed_lev = ((out_report_data[0x0A]>>4)&0x07);
-                        bsave_cfg_dpi = true;
-                    }
-				}
-                if(out_report_data[0x0B]&(1<<3))
-                {				                // rgb颜色
-                    if((out_report_data[0x0B]&0x07) != led_rgb_index)
-                    {
-                        led_rgb_index = (out_report_data[0x0B]&0x07);
-                        bsave_cfg_dpi = true;
-                    }
-				}
+// 灯光配置: 本机无背光, 忽略
 
                 hid_get_fw_mode_info();
                 m_data_flag |= bhid_data_send;
