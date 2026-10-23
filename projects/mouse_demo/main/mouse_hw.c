@@ -88,15 +88,13 @@ pmu_lpm_t pm_checker_callback(void)
     if(ms_sleep_level < MS_SLEEP_LEVEL2) {
         if(MS_SLEEP_LEVEL0 == ms_sleep_level)
         {                                       // 此处根据实际情况设置，有PWM等不同外设，休眠状态会有差异
-            if(true==bpwm_valid)                // PWM 调光运行中，不能深睡
-                return PMU_LPM_IDLE;
             if(0 != OM_RTC->TICK)
                 return PMU_LPM_IDLE;
         }
 
         /* 距离下次唤醒时间剩余300us， 不进入休眠, 否则进入休眠 */
         if ((ex2_stk_sleep_duration_get() > 10))
-            return PMU_LPM_STOP1;           // PWM没有打开，可以进入STOP1
+            return PMU_LPM_STOP1;
     }
     else
     {
@@ -105,7 +103,6 @@ pmu_lpm_t pm_checker_callback(void)
             ex2_stk_uninit();
             //进入深睡眠前需要存一些配置信息(如dpi、模式、地址等)到HS_PMU->SCRATCH, 醒来后可通过OM_CPM->RSTCTRL判断复位原因决定广播还是回连。
 
-            logo_off_deep();                    // 深睡前得把 PWM 停干净并关时钟
             exled_ctrl = 0x02;
             exLogo_send();
 
@@ -123,12 +120,7 @@ pmu_lpm_t pm_checker_callback(void)
                 NVIC_SystemReset();
 
             if((ex2_stk_sleep_duration_get() > 10))
-            {
-                if(0x00000000 == OM_PWM->PWMCON)
-                    return PMU_LPM_STOP1;           // PWM没有打开，可以进入STOP1
-                else
-                    return PMU_LPM_IDLE;
-            }
+                return PMU_LPM_STOP1;
         }
     }
 

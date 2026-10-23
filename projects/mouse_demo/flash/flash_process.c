@@ -155,9 +155,6 @@ void laod_defaut_status(void)
 
     key_ctrl &= ~bwin_lock_status;
     key_ctrl |= bwin_mac_sataus;
-
-    led_cur_mode = iMODE_LED_ON;                // PWM背光只有 常亮/呼吸/关闭
-    bled_bright_en = true;
 }
 
 /*******************************************************************************
@@ -200,13 +197,6 @@ void laod_mouse_status(void)
             if(sys_mode&(1<<(device_type&0x07)))
                 key_ctrl |= bwin_mac_sataus;
 
-            led_cur_mode = (flash_fifo[i+5]&0x1F);
-            if(iMODE_LED_MAX < led_cur_mode)    // 旧固件存的ARGB模式值或异常值，
-                led_cur_mode = iMODE_LED_ON;    // 越界则回落到常亮
-            bled_bright_en = false;
-            if(flash_fifo[i+5]&(1<<7))
-                bled_bright_en = true;
-
             report_24g = ((report_dpi[0]>>4)&0x03);
             report_usb = ((report_dpi[0]>>6)&0x03);
             if(0 == i)
@@ -248,15 +238,6 @@ void laod_cfg_dpi(void)
         if(iCFG_DPI_TYPE == (flash_fifo[i+0]))
         {
             cfg_dpi_base = i;
-            led_light_lev = (flash_fifo[i+1]&0x07);
-            if(iLED_LEV_MAX < led_light_lev)    // 旧固件/异常值，越界则取最亮
-                led_light_lev = iLED_LEV_MAX;
-            led_speed_lev = ((flash_fifo[i+1]>>4)&0x07);
-            if(iSPEED_LEV_MAX < led_speed_lev)
-                led_speed_lev = iSPEED_LEV_MAX;
-
-            led_rgb_index = (flash_fifo[i+2]&0x07);
-
             sleep_time_24g = flash_fifo[i+3];
             sleep_time_ble = flash_fifo[i+4];
             adv_cfg_value = ((flash_fifo[i+6]<<8)|flash_fifo[i+5]);
@@ -269,10 +250,6 @@ void laod_cfg_dpi(void)
         {
             if(0xF0 == i)
             {
-                led_light_lev = iLED_LEV_3;
-                led_speed_lev = iSPEED_LEV_2;
-                led_rgb_index = iPWM_RGB;           // 全彩
-
                 sleep_time_24g = 0x25;              // 24g：1分钟一级休眠，10分钟深度休眠
                 sleep_time_ble = 0x25;              // ble：1分钟一级休眠，10分钟深度休眠
 
@@ -410,9 +387,7 @@ __attribute__((noinline)) void flash_save_status(void)
         sys_mode |= (1<<(device_type&0x07));
     dat_temp[4] = sys_mode;
 
-    dat_temp[5] = (led_cur_mode&0x1F);
-    if(true == bled_bright_en)
-        dat_temp[5] |= (1<<7);
+    dat_temp[5] = 0;                            // 原灯光模式, 本机无背光
     dat_temp[6] = (key_mode&0x03);
     dat_temp[6] |= ((bt_index<<2)&0x0C);
     dat_temp[6] |= ((device_type<<4)&0x70);
@@ -481,9 +456,8 @@ __attribute__((noinline)) void flash_save_cfg_dpi(void)
     uint8_t i, dat_temp[16];
 
     dat_temp[0] = iCFG_DPI_TYPE;
-    dat_temp[1] = (led_light_lev&0x07);
-    dat_temp[1] |= ((led_speed_lev<<4)&0x70);
-    dat_temp[2] = (led_rgb_index&0x07);
+    dat_temp[1] = 0;                            // 原灯光亮度/速度, 本机无背光
+    dat_temp[2] = 0;                            // 原灯光颜色
 
     dat_temp[3] = sleep_time_24g;
     dat_temp[4] = sleep_time_ble;
