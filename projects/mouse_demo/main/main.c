@@ -266,11 +266,11 @@ int main(void)
     OM_RCC->CLKGATE |= RCC_DEV_CLK_GATE_GPIO_CLK_GATE_MASK;
 //------------------------------------------------------------------------------
 // 不同个案，需要根据实际原理图设置初始化IO状态
-    OM_PMU->PAD_PU_CTRL = 0x00AAAA00;       // KEY_R0~R7(P04~P13)行输入150K上拉, 0x00A80A00误删R2/R3/R4
-    OM_PMU->PAD_PU_CTRL_1 = 0x020AA821;     // 上拉编码 01=30K 10=150K: P20 30K, P22 150K, P25~P27/P30/P31 列线150K, P34(CHR_OK) 150K
-                                            // P35(USB_5V)/P36(蓝牙档) 无上下拉, 由外部电路决定电平
-                                            // P21/P24 输出低, 不加上拉(否则 P21 30K 漏电约110uA, P24 150K 约22uA)
-    OM_PMU->PAD_PD_CTRL = 0x0000000C;       // 只留 P02/P03(USB D-/D+)下拉; P34 改上拉
+    OM_PMU->PAD_PU_CTRL = 0x00AAAA00;       
+    OM_PMU->PAD_PU_CTRL_1 = 0x020AA821;     
+                                            
+                                            
+    OM_PMU->PAD_PD_CTRL = 0x0000000C;       
     OM_PMU->PAD_BUF_EN &= ~LVD_PIN_MASK;
     OM_PMU->PAD_BUF_EN |= (1<<MODE_BT_PIN | 1<<MODE_24G_PIN);
 
