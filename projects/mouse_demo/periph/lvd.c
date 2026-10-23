@@ -375,18 +375,18 @@ void led_hint_process(void)
     if(0 != (bat_status&blvd_power_on))
         return;
 
-                                                // HM-1515CWB-1: 百位=DIG2 十位=DIG3 个位=DIG1(带小数点H)
-    exled &= ~bled_DIG_ALL;                     // 段码即帧数据, 字库位序与协议一致(A=bit0..G=bit6)
+                                                // HM-1515CWB-1(左->右): 百位"1"=屏DIG1的B1/C1 十位=屏DIG2 个位=屏DIG3
+    exled &= ~bled_DIG_ALL;                     // 字库 A=bit0..G=bit6, 按灯号移位(见 exLed.h)
     if(100 == bat_value)
     {
-        exled |= ((uint32_t)led_no_tbl[1]<<bled_DIG2_SHIFT)
-               | ((uint32_t)led_no_tbl[0]<<bled_DIG3_SHIFT)
-               | ((uint32_t)led_no_tbl[0]<<bled_DIG1_SHIFT);
+        exled |= bled_hundred_1
+               | ((uint32_t)led_no_tbl[0]<<bled_DIG2_SHIFT)
+               | ((uint32_t)led_no_tbl[0]<<bled_DIG3_SHIFT);
     }
     else
     {
-        exled |= ((uint32_t)led_no_tbl[bat_value/10])<<bled_DIG3_SHIFT;
-        exled |= ((uint32_t)led_no_tbl[bat_value%10])<<bled_DIG1_SHIFT;
+        exled |= ((uint32_t)led_no_tbl[bat_value/10])<<bled_DIG2_SHIFT;
+        exled |= ((uint32_t)led_no_tbl[bat_value%10])<<bled_DIG3_SHIFT;
     }
 
     if(0 == (bat_status&bcharging))
