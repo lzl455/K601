@@ -222,6 +222,7 @@ void charge_only_process(void)
 
         if(0 != USB_5V_PIN)
         {                                   // 充电中：5V 供电，轮询刷新显示
+            exled |= bled_WIR;              // 充电档点亮 Wir(关屏帧会清 exled, 每次刷新前补上)
             led_hint_process();             // 电量%/充电图标/低电提示(lvd)
 
             rtc_temp = drv_rtc_read(OM_RTC);
