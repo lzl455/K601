@@ -145,7 +145,7 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         mLED_VDD_DIS;
         MATRX_ALL_LOW;
         KEY_EX_LOW;
-        OM_PMU->PAD_PU_CTRL_1 = 0x08000001;  // 睡眠只留P20(MODE_24G)30K, P35 150K; P21空脚输出低不上拉(原0x05漏电)
+        OM_PMU->PAD_PU_CTRL_1 = 0x02000001;  // 睡眠只留P20(MODE_24G)30K, P34(CHR_OK)150K; P21空脚输出低不上拉(原0x05漏电)
 
         drv_gpio_set_trig(OM_GPIO0, (1<<KEY_R0_PIN)|(1<<KEY_R1_PIN)|(1<<KEY_R2_PIN)|(1<<KEY_R3_PIN)| \
                                     (1<<KEY_R4_PIN)|(1<<KEY_R5_PIN)|(1<<KEY_R6_PIN)|(1<<KEY_R7_PIN)| \
@@ -182,7 +182,7 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         drv_pmu_wakeup_pin_set(WHA_B_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
         NVIC_DisableIRQ(WAKEUP_GPIO0_IRQn);
 
-        OM_PMU->PAD_PU_CTRL_1 = 0x080AA821;
+        OM_PMU->PAD_PU_CTRL_1 = 0x020AA821;
         MATRX_ALL_IN;
 #if (iWHEEL_ENCODER_EN)
         OM_ENCODER->EN &= ~(ENCODER_EN_INTERRUPT_EN_MASK|ENCODER_EN_WAKEUP_EN_MASK);
@@ -297,9 +297,10 @@ int main(void)
 //------------------------------------------------------------------------------
 // 不同个案，需要根据实际原理图设置初始化IO状态
     OM_PMU->PAD_PU_CTRL = 0x00AAAA00;       // KEY_R0~R7(P04~P13)行输入150K上拉, 0x00A80A00误删R2/R3/R4
-    OM_PMU->PAD_PU_CTRL_1 = 0x080AA821;     // 上拉编码 01=30K 10=150K: P20 30K, P22 150K, P25~P27/P30/P31 列线150K, P35 150K
+    OM_PMU->PAD_PU_CTRL_1 = 0x020AA821;     // 上拉编码 01=30K 10=150K: P20 30K, P22 150K, P25~P27/P30/P31 列线150K, P34(CHR_OK) 150K
+                                            // P35(USB_5V)/P36(蓝牙档) 无上下拉, 由外部电路决定电平
                                             // P21/P24 输出低, 不加上拉(否则 P21 30K 漏电约110uA, P24 150K 约22uA)
-    OM_PMU->PAD_PD_CTRL = 0x1000000C;  
+    OM_PMU->PAD_PD_CTRL = 0x0000000C;       // 只留 P02/P03(USB D-/D+)下拉; P34 改上拉
     OM_PMU->PAD_BUF_EN &= ~LVD_PIN_MASK;
     OM_PMU->PAD_BUF_EN |= (1<<MODE_BT_PIN | 1<<MODE_24G_PIN);
 

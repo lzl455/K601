@@ -157,8 +157,8 @@ __RAM_CODE void drv_pmu_set_low_power_mode(pmu_lpm_t lpm)
                 OM_PMU->LPMS = (lpms & (~PMU_LPMS_LOW_PWR_MODE_EN_MASK)) | (uint32_t)lpm;
                 if (lpm == PMU_LPM_DEEP_SLEEP) {
                     OM_PMU->PAD_PU_CTRL = 0x00AAAA00;
-                    OM_PMU->PAD_PU_CTRL_1 = 0x08000001;     // P20 30K, P35 150K; P21 空脚不上拉(原0x05 P21 30K 漏电), 与 main.c 睡眠配置一致
-                    OM_PMU->PAD_PD_CTRL = 0x1000000C;
+                    OM_PMU->PAD_PU_CTRL_1 = 0x02000000;     // 只留 P34(CHR_OK) 150K; P20 模式开关深睡不上拉(避免拨档接地时漏电); P21 空脚不上拉
+                    OM_PMU->PAD_PD_CTRL = 0x0000000C;       // 只留 P02/P03 下拉
                     OM_PMU->PAD_BUF_EN &= ~(1<<MODE_BT_PIN | 1<<MODE_24G_PIN);
 
                     OM_GPIO0->DATAOUT  = 0xF800FFF3;
