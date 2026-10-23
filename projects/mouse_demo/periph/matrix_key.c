@@ -319,7 +319,7 @@ define_key_process:
 	    if((0==(key_ctrl&bkey_press_status)) && (0 == (define_key_ctrl&bcom_decode_ing)))
 		{
             multi_data_tmp_l = 0;
-            multi_data_tmp_l = 0;
+            multi_data_tmp_h = 0;
 	        memset(key_data_tmp, 0x00, 22);
 		}
 	}

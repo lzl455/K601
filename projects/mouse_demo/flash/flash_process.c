@@ -181,6 +181,8 @@ void laod_mouse_status(void)
 
             key_mode = (flash_fifo[i+6]&0x03);
             bt_index = ((flash_fifo[i+6]>>2)&0x03);
+            if(iDEVICE_TYPE_BT2 < bt_index)     // 3 是 2.4G 编号, 异常值回落到蓝牙通道 1
+                bt_index = iDEVICE_TYPE_BT0;
             //device_type = ((flash_fifo[i+6]>>4)&0x07);  // 按键切换模式情况下才能打开 ！！！！！！！！
             bat_status &= 0xE0;
             bat_status |= (flash_fifo[i+7]&0x1F);
