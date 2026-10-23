@@ -1,0 +1,11 @@
+# Keil 编译产物（out\ 为目标文件/清单，_build\ 为反汇编，*.bin 由 fromelf 生成）
+projects/*/keil5/out/
+projects/*/keil5/_build/
+projects/*/keil5/*.bin
+
+# Keil / J-Link 日志
+projects/*/keil5/build_log.txt
+projects/*/keil5/JLinkLog.txt
+
+# 注意：不要加 *.o / *.bin 这类全局规则，
+# mode_24g/rf_protocol.o（2.4G 预编译库）和根目录的 bootloader .bin 需要保留在仓库里。
