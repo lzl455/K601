@@ -27,13 +27,11 @@
 //
 
 
-extern uint8_t                  hint_time_count;
 extern uint32_t                 exled_rtc_count;    // 54E 显示刷新节拍(定义在 led.c)
 
 //-----------------------------------------------------------------------------;
 // 函数引用
 //
-extern void led_status_hint(void);
 
 extern void logo_off(void);
 extern void device_led_on(void);

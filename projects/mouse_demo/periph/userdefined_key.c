@@ -123,14 +123,9 @@ void __attribute__((noinline)) key_decode_exfun(void)
                     flash_erase(iFLASH_BLE_ID_BANK_BAK);
 
                     for(uint8_t i=0; i<3; i++)
-                    {
+                    {                           // 原锁灯闪 3 次的时长, 保留作复位前延时
                         drv_wdt_keep_alive(OM_WDT);
-                        hint_led_status = (bled_hint_mode|bled_num|bled_caps|bled_win_lock);
-                        led_status_hint();
-                        delayus(250000);
-                        hint_led_status = bled_hint_mode;
-                        led_status_hint();
-                        delayus(250000);
+                        delayus(500000);
                     }
 
                     device_type = iDEVICE_TYPE_BT0;
@@ -678,8 +673,6 @@ std_key_decode_1:
                                     key_ctrl |= bwin_mac_sataus;;
                                     key_ctrl |= bfn_save_status;
                                 }
-                                if(0 == hint_time_count)
-                                    hint_time_count = 0x37;
 
                                 break;
                             case iKEY_MAC&0x0F:
@@ -688,8 +681,6 @@ std_key_decode_1:
                                     key_ctrl &= ~bwin_mac_sataus;;
                                     key_ctrl |= bfn_save_status;
                                 }
-                                if(0 == hint_time_count)
-                                    hint_time_count = 0x37;
 
                                 break;
 //                            case iKEY_WIN_MAC&0x0F:

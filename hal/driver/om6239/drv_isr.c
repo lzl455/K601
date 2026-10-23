@@ -192,6 +192,7 @@ void LEDC_IRQHandler(void)
 
 void ENCODER_IRQHandler(void)
 {
+    #if (RTE_ENCODER)
     if (OM_ENCODER->VALID & ENCODER_VALID_CNT_MASK) {
         if(OM_ENCODER->CNT & 0x08) {
             wheel_data = 0xf0|OM_ENCODER->CNT;
@@ -212,6 +213,7 @@ void ENCODER_IRQHandler(void)
             }
         }
     }
+    #endif /* RTE_ENCODER */
 }
 
 #endif  /* (RTE_ISR) */

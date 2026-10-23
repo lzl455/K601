@@ -370,7 +370,6 @@ __RAM_CODE void ctrl_54e_inpull(void)
 
 void scan_key(void)
 {
-    mLED_VDD_DIS;
     MATRX_ALL_IN;
     ctrl_54e_inpull();
     delayus(10);
@@ -433,15 +432,6 @@ __RAM_CODE void matrixkey_scan(void)
     multi_data_tmp_h = 0;
 
     scan_key();
-    if(iDEVICE_TYPE_USB == device_type)
-    {
-        led_status_hint();
-    }
-    else
-    {
-        if(0==(ble_24g_ctrl&bom6239_sync_ing))
-            led_status_hint();
-    }
 
     k = 0;
     for(i=0; i<iMATRIX_COL_NUM; i++)

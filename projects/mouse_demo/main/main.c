@@ -80,7 +80,6 @@ uint32_t                    rtc_temp_value;
 //
 uint8_t                     m_data_flag;
 uint8_t                     kb_led_status;
-uint8_t                     hint_led_status;
 
 uint8_t                     m_tx_count;
 uint8_t                     key_tx_count;
@@ -97,7 +96,6 @@ uint8_t                     std_key[22];
 uint8_t                     mmk_data_l;
 uint8_t                     mmk_data_h;
 
-uint8_t                     wheel_data;
 //
 //----------------------------------------------
 // 鼠标ID
@@ -111,19 +109,6 @@ extern void rf_freq_make(void);
 extern pmu_lpm_t pm_checker_callback(void);
 extern uint32_t adv_interval_ms;
 extern void bat_check(void);
-
-/******************************************************************************
-* 函数名称: encoder_init()
-* 功能描述: 编码器初始化
-* 输入参数: 无
-* 输出参数: 无
-* 说    明: 
-******************************************************************************/
-void encoder_init(void)
-{
-    drv_pmu_power_set(PMU_POWER_ID_RTC2M, PMU_POWER_ON);
-    drv_encoder_init();
-}
 
 /******************************************************************************
 * 函数名称: mouse_periph_wakeup_enable()
@@ -142,14 +127,12 @@ void mouse_periph_wakeup_enable(uint8_t mask)
     drv_pmu_clear_wakeup();
 
     if(mask & WAKEUP_BTN_MASK) { /* button only faling edge wakeup*/
-        mLED_VDD_DIS;
         MATRX_ALL_LOW;
         KEY_EX_LOW;
         OM_PMU->PAD_PU_CTRL_1 = 0x02000001;  // 睡眠只留P20(MODE_24G)30K, P34(CHR_OK)150K; P21空脚输出低不上拉(原0x05漏电)
 
         drv_gpio_set_trig(OM_GPIO0, (1<<KEY_R0_PIN)|(1<<KEY_R1_PIN)|(1<<KEY_R2_PIN)|(1<<KEY_R3_PIN)| \
-                                    (1<<KEY_R4_PIN)|(1<<KEY_R5_PIN)|(1<<KEY_R6_PIN)|(1<<KEY_R7_PIN)| \
-                                    (1<<WHA_A_PIN)|(1<<WHA_B_PIN), \
+                                    (1<<KEY_R4_PIN)|(1<<KEY_R5_PIN)|(1<<KEY_R6_PIN)|(1<<KEY_R7_PIN), \
                                      GPIO_TRIG_FALLING_EDGE);
         drv_pmu_wakeup_pin_set(KEY_R0_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
         drv_pmu_wakeup_pin_set(KEY_R1_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
@@ -159,14 +142,8 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         drv_pmu_wakeup_pin_set(KEY_R5_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
         drv_pmu_wakeup_pin_set(KEY_R6_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
         drv_pmu_wakeup_pin_set(KEY_R7_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
-
-        drv_pmu_wakeup_pin_set(WHA_A_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
-        drv_pmu_wakeup_pin_set(WHA_B_PIN, PMU_PIN_WAKEUP_TYPE_FALL);
         NVIC_SetPriority(WAKEUP_GPIO0_IRQn, RTE_GPIO0_IRQ_PRIORITY);
         NVIC_EnableIRQ(WAKEUP_GPIO0_IRQn);
-#if (iWHEEL_ENCODER_EN)
-        OM_ENCODER->EN |= (ENCODER_EN_INTERRUPT_EN_MASK|ENCODER_EN_WAKEUP_EN_MASK);
-#endif
     }
     else {
         drv_pmu_wakeup_pin_set(KEY_R0_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
@@ -177,16 +154,10 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         drv_pmu_wakeup_pin_set(KEY_R5_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
         drv_pmu_wakeup_pin_set(KEY_R6_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
         drv_pmu_wakeup_pin_set(KEY_R7_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
-
-        drv_pmu_wakeup_pin_set(WHA_A_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
-        drv_pmu_wakeup_pin_set(WHA_B_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
         NVIC_DisableIRQ(WAKEUP_GPIO0_IRQn);
 
         OM_PMU->PAD_PU_CTRL_1 = 0x020AA821;
         MATRX_ALL_IN;
-#if (iWHEEL_ENCODER_EN)
-        OM_ENCODER->EN &= ~(ENCODER_EN_INTERRUPT_EN_MASK|ENCODER_EN_WAKEUP_EN_MASK);
-#endif
     }
 
     OM_CRITICAL_END();
@@ -211,7 +182,6 @@ void charge_only_process(void)
 
     device_led_off();                       // 无线模式灯不亮
     logo_off();                             // 背光关(PWM恒灭)
-    mLED_VDD_DIS;                           // 锁灯供电关
     exio_ctrl = 0;                          // 54E 保持工作态，显示电量
     exled_rtc_count = 0;
 
@@ -314,7 +284,6 @@ int main(void)
 #if (!iDEBUG_SWD_OPEN)
     OM_RCC->CLKGATE &= ~RCC_DEV_CLK_GATE_SWD_CLK_GATE_MASK; // disable jtag
 #endif
-    hint_led_status = 0;
     kb_led_status = 0;
     mouse_periph_wakeup_enable(WAKEUP_ALL_DISABLE);
     if(RCC_RST_TYPE_DEEP_SLEEP == (OM_RCC->RSTCTRL & 0x07))
@@ -350,9 +319,6 @@ int main(void)
     exled = 0;
     exLogo_send();                              // 初始化唤醒外挂芯片
 
-#if (iWHEEL_ENCODER_EN)
-    encoder_init();                             // 有外挂滚轮的时候调用，没有的时候屏蔽此行
-#endif
     bat_init();
 
     laod_flash_cfg();

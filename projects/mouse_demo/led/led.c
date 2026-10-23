@@ -31,7 +31,6 @@ uint8_t                         device_hint_count;
 
 uint32_t                        led_delay_count;
 
-uint8_t                         hint_time_count;
 
 uint32_t                        exled_rtc_count=0;  // 54E 显示刷新节拍
 
@@ -40,78 +39,6 @@ extern bool                     b24g_nromal;
 //=============================================================================;
 // 代码区                                                                       ;
 //=============================================================================;
-
-/******************************************************************************
-* 函数名称: led_status_hint
-* 功能描述: 根据模式提示、键盘锁灯刷新指示灯(54E 外挂显示)
-* 输入参数: 无
-* 输出参数: 无
-* 说    明:
-******************************************************************************/
-void led_status_hint(void)
-{
-    mLED_VDD_DIS;
-	if(hint_led_status&bled_hint_mode)
-    {
-        if(hint_led_status&bled_num)
-        {
-            mLED_NUM_LOW;
-        }
-        else
-        {
-            mLED_NUM_HIGH;
-        }
-        if(hint_led_status&bled_caps)
-        {
-            mLED_CAPS_LOW;
-        }
-        else
-        {
-            mLED_CAPS_HIGH;
-        }
-        if(hint_led_status&bled_win_lock)
-        {
-            mLED_WIN_LOW;
-        }
-        else
-        {
-            mLED_WIN_HIGH;
-        }
-
-        if(0==(hint_led_status&(bled_num|bled_caps|bled_win_lock)))
-            return;
-    }
-    else
-    {
-        if(kb_led_status&bnum_lock)
-        {
-            mLED_NUM_LOW;
-        }
-        else
-        {
-            mLED_NUM_HIGH;
-        }
-
-        if(kb_led_status&bcaps_lock)
-        {
-            mLED_CAPS_LOW;
-        }
-        else
-        {
-            mLED_CAPS_HIGH;
-        }
-
-        if((key_ctrl&bwin_mac_sataus) && (key_ctrl&bwin_lock_status))
-        {
-            mLED_WIN_LOW;
-        }
-        else
-        {
-            mLED_WIN_HIGH;
-        }
-    }
-    mLED_VDD_EN;
-}
 
 /*******************************************************************************
 * 函数名称: device_led_on()
@@ -161,40 +88,14 @@ void logo_off(void)
 extern void key_into_fcc_test(void);
 
 /******************************************************************************
-* 函数名称: logo_process
-* 功能描述:
+* 函数名称: device_led_process
+* 功能描述: 模式图标(BT1/BT2/2.4G)回连/对码闪烁
 * 输入参数:
 * 输出参数:
 * 说    明:
 ******************************************************************************/
 void device_led_process(void)
 {
-//-----------------------------------------------------------------------------
-// 模式提示
-//
-    if(0 != hint_time_count)
-    {
-        hint_led_status |= bled_hint_mode;
-        if(0 != (hint_time_count&0x08))
-        {
-            bdevice_led_status = true;
-            hint_led_status |= (bled_num|bled_caps|bled_win_lock);
-        }
-        else
-        {
-            hint_led_status &= ~(bled_num|bled_caps|bled_win_lock);
-        }
-
-        hint_time_count--;
-        if(2>hint_time_count)
-        {
-            hint_time_count = 0;
-            hint_led_status = 0x00;
-        }
-
-        return;
-    }
-
     rtc_cur_value = drv_rtc_read(OM_RTC);
     if(iDEVICE_TYPE_USB != device_type)
     {
@@ -304,7 +205,7 @@ void device_led_process(void)
 
 /******************************************************************************
 * 函数名称: logo_process
-* 功能描述: 背光灯效主流程（PWM 单色背光，移植自 K102）
+* 功能描述: 54E 显示刷新、flash 保存、54E 开关屏
 * 输入参数:
 * 输出参数:
 * 说    明:
