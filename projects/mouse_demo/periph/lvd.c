@@ -370,30 +370,81 @@ __RAM_CODE void bat_check(void)
 ******************************************************************************/
 void led_hint_process(void)
 {
+    uint8_t i;
+
     rtc_cur_value = drv_rtc_read(OM_RTC);
     bat_check();
     if(0 != (bat_status&blvd_power_on))
         return;
 
-                                                // HM-1515CWB-1: 百位=DIG2 十位=DIG3 个位=DIG1(带小数点H)
-    exled &= ~bled_DIG_ALL;                     // 段码即帧数据, 字库位序与协议一致(A=bit0..G=bit6)
+    exled &= 0xFFC000F9;                        // 只清数字段, 图标位(bit0,3~7)保留
     if(100 == bat_value)
     {
-        exled |= ((uint32_t)led_no_tbl[1]<<bled_DIG2_SHIFT)
-               | ((uint32_t)led_no_tbl[0]<<bled_DIG3_SHIFT)
-               | ((uint32_t)led_no_tbl[0]<<bled_DIG1_SHIFT);
+        exled |= (0x001FBF06);                  // 1 0 0
     }
     else
     {
-        exled |= ((uint32_t)led_no_tbl[bat_value/10])<<bled_DIG3_SHIFT;
-        exled |= ((uint32_t)led_no_tbl[bat_value%10])<<bled_DIG1_SHIFT;
+        i = led_no_tbl[bat_value/10];
+        if(i&(1<<0))
+            exled |= bled_2_A;
+        if(i&(1<<1))
+            exled |= bled_2_B;
+        if(i&(1<<2))
+            exled |= bled_2_C;
+        if(i&(1<<3))
+            exled |= bled_2_D;
+        if(i&(1<<4))
+            exled |= bled_2_E;
+        if(i&(1<<5))
+            exled |= bled_2_F;
+        if(i&(1<<6))
+            exled |= bled_2_G;
+
+        i = led_no_tbl[bat_value%10];
+        if(i&(1<<0))
+            exled |= bled_3_A;
+        if(i&(1<<1))
+            exled |= bled_3_B;
+        if(i&(1<<2))
+            exled |= bled_3_C;
+        if(i&(1<<3))
+            exled |= bled_3_D;
+        if(i&(1<<4))
+            exled |= bled_3_E;
+        if(i&(1<<5))
+            exled |= bled_3_F;
+        if(i&(1<<6))
+            exled |= bled_3_G;
     }
+
+    exled |= bled_PERCENT;    // %
 
     if(0 == (bat_status&bcharging))
     {
         if(iLOW_POWER >= bat_value)
-        {
-            if(0<bat_value)                     // 新屏无低电图标, 仅保留时序与自动关机流程
+        {                                       // 低电: 电池图标亮0.5s/灭1.5s闪烁
+            if(exled&bled_BAT)
+            {
+                exled |= bled_BAT;
+                if(mMS_TO_TICK(500) < (rtc_cur_value - lvd_hint_time_count))
+                {
+                    exled &= ~bled_BAT;
+                    lvd_hint_time_count = rtc_cur_value;
+                    exled_rtc_count=0;
+                }
+            }
+            else
+            {
+                exled &= ~bled_BAT;
+                if(mMS_TO_TICK(1500) < (rtc_cur_value - lvd_hint_time_count))
+                {
+                    exled |= bled_BAT;
+                    lvd_hint_time_count = rtc_cur_value;
+                    exled_rtc_count=0;
+                }
+            }
+
+            if(0<bat_value)
 			    return;
 
             power_off_time_count++;				// 时间单位16ms
@@ -412,6 +463,7 @@ void led_hint_process(void)
         {
             lvd_hint_time_count = 0;
             power_off_time_count = 0;
+	        exled &= ~bled_BAT;
         }
     }
     else
@@ -426,9 +478,11 @@ void led_hint_process(void)
             }
 
             power_off_time_count = 0;
+            exled &= ~bled_BAT;
         }
         else
-        {									// 充电中, 新屏无充电图标
+        {									// 充电中: 电池图标常亮
+            exled |= bled_BAT;
             charge_ok_delay_count = 200;
         }
     }
