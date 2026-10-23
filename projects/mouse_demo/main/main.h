@@ -149,17 +149,7 @@
 //#define ARGB_OFF_PIN            (0*8+0)
 #define UART_54E_PIN            (0*8+0)
 
-#define VED_VDD_PIN             (2*8+3)
-
-#define mLED_VDD_DIS            {OM_GPIO0->DATAOUTCLR = (1u<<VED_VDD_PIN);OM_GPIO0->OUTENSET = (1u<<VED_VDD_PIN);}
-#define mLED_NUM_LOW            
-#define mLED_CAPS_LOW           
-#define mLED_WIN_LOW            
-
-#define mLED_VDD_EN             {OM_GPIO0->DATAOUTSET = (1u<<VED_VDD_PIN);OM_GPIO0->OUTENSET = (1u<<VED_VDD_PIN);}
-#define mLED_NUM_HIGH           
-#define mLED_CAPS_HIGH          
-#define mLED_WIN_HIGH           
+#define VED_VDD_PIN             (2*8+3)         // 锁灯/背光供电, 本机不用, 初始化后常输出低
 //
 //----------------------------------------------
 // 电源其他
@@ -175,11 +165,6 @@
 #define USB_DN_PIN              (0*8+2)
 #define USB_DP_PIN              (0*8+3)
 
-#define WHA_A_PIN               (2*8+0)         // 与 MODE_24G_PIN 同脚, 本机无滚轮
-#define WHA_B_PIN               (2*8+1)         // 空脚(输出低)
-
-#define iWHEEL_ENCODER_EN       0               // 1: 有外挂滚轮(编码器复用 P20/P21); 0: 无滚轮, 编码器不开
-                                                // P20 是模式开关, 开编码器会把拨档误计成滚轮
 //
 //----------------------------------------------
 // 调试IO
@@ -277,7 +262,6 @@ extern uint32_t                 rtc_init_value;
 extern uint32_t                 rtc_cur_value;
 extern uint32_t                 rtc_temp_value;
 
-extern uint8_t                  wheel_data;
 extern uint8_t                  m_tx_count;
 extern uint8_t                  key_tx_count;
 extern uint8_t                  key_ex_tx_count;
@@ -294,14 +278,6 @@ extern uint8_t                  m_data_flag;
     #define bmmk_data_send      (1<<2)
     #define bstd_kb_data_send   (1<<1)
     #define bmouse_data_send    (1<<0)
-//}
-extern uint8_t                  hint_led_status;
-//{
-    #define bled_hint_mode      (1<<7)
-
-    #define bled_win_lock       (1<<2)
-    #define bled_caps           (1<<1)
-    #define bled_num            (1<<0)
 //}
 
 extern uint8_t                  kb_led_status;

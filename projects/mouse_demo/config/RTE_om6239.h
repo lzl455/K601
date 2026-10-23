@@ -164,7 +164,7 @@
 #define RTE_SENSCAN_IRQ_PRIORITY                       2
 
 // <o.0> RTE_ENCODER
-#define RTE_ENCODER                                    1
+#define RTE_ENCODER                                    0
 // <o.0> RTE_ENCODER_REGISTER_CALLBACK
 #define RTE_ENCODER_REGISTER_CALLBACK                  1
 //   <o.0..1> RTE_ENCODER_IRQ_PRIORITY
