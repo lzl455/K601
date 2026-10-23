@@ -28,7 +28,8 @@
 //
 // 对照 HM-1515CWB-1 电原理图(阳极脚->阴极脚), 物理排列(左->右) DIG1 DIG2 DIG3:
 //   屏 DIG1  A~H : 1-2 1-3 1-4 1-5 1-6 2-1 2-3 2-4 = 灯1~8   (规格书 F 标 "2-2" 为笔误)
-//                  其中 B1/C1 组成百位"1", A1/D1/E1/F1/G1/H1 为独立图标
+//                  其中 B1/C1 组成百位"1", 其余为图标(按屏幕丝印):
+//                  A1=2.4G D1=BT1 E1=BT2 F1=Wir(底排左->右) G1=% H1=电池(右上)
 //   屏 DIG2  A~G : 2-5 2-6 3-1 3-2 3-4 3-5 3-6     = 灯9~15  (十位)
 //   屏 DIG3  A~G : 4-1 4-2 4-3 4-5 4-6 5-1 5-2     = 灯16~22 (个位, 跨 DIG2.bit7 和 DIG3)
 //   灯23~30 屏上无对应。
@@ -55,14 +56,14 @@ extern uint32_t                 exled;
     #define bled_2_B            (1<<9)
     #define bled_2_A            (1<<8)
 
-    #define bled_1_H            (1<<7)          // 图标 H1
-    #define bled_1_G            (1<<6)          // 图标 G1
-    #define bled_1_F            (1<<5)          // 图标 F1
-    #define bled_1_E            (1<<4)          // 图标 E1
-    #define bled_1_D            (1<<3)          // 图标 D1
+    #define bled_BAT            (1<<7)          // H1 电池图标(右上)
+    #define bled_PERCENT        (1<<6)          // G1 "%"
+    #define bled_WIR            (1<<5)          // F1 "Wir"
+    #define bled_BT2            (1<<4)          // E1 "BT2"
+    #define bled_BT1            (1<<3)          // D1 "BT1"
     #define bled_1_C            (1<<2)          // 百位"1"
     #define bled_1_B            (1<<1)          // 百位"1"
-    #define bled_1_A            (1<<0)          // 图标 A1
+    #define bled_24G            (1<<0)          // A1 "2.4G"
 //}
 extern uint8_t                  exio_ctrl;
 //{
