@@ -55,7 +55,6 @@
 //-----------------------------------------------------------------------------;
 //常量定义区
 //
-#define iDEBUG_SWD_OPEN     0                   // 1:打开SWD调试口(调试阶段使用) 0:关闭(量产务必改回0)
 
 //-----------------------------------------------------------------------------;
 //变量定义区
@@ -310,9 +309,7 @@ int main(void)
     device_type = iDEVICE_TYPE_ERR;
 
                                                 // ???????????????????????
-#if (!iDEBUG_SWD_OPEN)
     OM_RCC->CLKGATE &= ~RCC_DEV_CLK_GATE_SWD_CLK_GATE_MASK; // disable jtag
-#endif
     hint_led_status = 0;
     kb_led_status = 0;
     mouse_periph_wakeup_enable(WAKEUP_ALL_DISABLE);
@@ -369,18 +366,12 @@ int main(void)
     if((RCC_RST_TYPE_POWER_ON == (OM_RCC->RSTCTRL & 0x07))
         || (iSCRATCH_BOOT_POWER == OM_PMU->SW_RSVD7))
     { // 上电进入
-        OM_RCC->CLKGATE |= RCC_DEV_CLK_GATE_SWD_CLK_GATE_MASK; // 打开SWD调试口时钟
-#if (iDEBUG_SWD_OPEN)
-        delayus(1000000);                     // 调试的时候一定需要打开，并且时间设置1s以上，不然芯片下载不了程序
-#else
+        OM_RCC->CLKGATE |= RCC_DEV_CLK_GATE_SWD_CLK_GATE_MASK; // 上电留 50ms SWD 窗口供烧录
         delayus(50000);
-#endif
 
         sys_ctrl = 0;
         OM_PMU->SW_RSVD7 = 0;
-#if (!iDEBUG_SWD_OPEN)
         OM_RCC->CLKGATE &= ~RCC_DEV_CLK_GATE_SWD_CLK_GATE_MASK; // disable jtag
-#endif
 
         //OM_PMU->SW_RSVD1 = 0;
         OM_PMU->SW_RSVD1 = (device_type&PMU_SW_RSVD1_RF_MDOE_MASK);
