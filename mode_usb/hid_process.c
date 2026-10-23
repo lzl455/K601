@@ -190,6 +190,7 @@ void flash_ctrl(void)
             if(0==out_report_data[4])
                 length = 256;
 
+            j = 0;
             if(iFLASH_MAX_LENGHT < (addr+length))
             {
                 hid_ctrl_reg |= bhid_cmd_err;

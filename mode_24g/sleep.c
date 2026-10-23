@@ -30,7 +30,7 @@ extern bool                 bperiph_int;
 ******************************************************************************/
 void sleep_process(void)
 {
-    uint8_t i;
+    uint8_t i = 0;
     uint32_t rtc_value;
     static uint8_t no_dongle_time_count;
 
