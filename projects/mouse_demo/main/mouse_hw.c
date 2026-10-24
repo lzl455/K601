@@ -338,6 +338,7 @@ void app_ble_evt_dispatch(uint32_t events)
         ble_24g_ctrl |= bom6239_sync_ing;
         matrixkey_scan();
         scan_mode_swtich(iMODE_CHECK_DELAY);
+        led_hint_process();                     // 广播期间(上电回连/对码)也显示电量
         logo_process();
         device_led_process();
     }
