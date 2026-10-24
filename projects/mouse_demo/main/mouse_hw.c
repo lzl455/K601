@@ -202,7 +202,7 @@ __RAM_CODE uint8_t ex2_app_mouse_scan(void)
     {
         if(true == profile_bas_tx_notification(bat_value))
             bbat_update=false;
-        return 1;
+        return 2;                               // 只发电量, 不算按键操作
     }
     else if(0!=m_tx_count)
     {                                           /* 未扫描到数据 */
@@ -270,6 +270,10 @@ void app_ble_evt_dispatch(uint32_t events)
     }
     if (events & (EX2_EVENT_APP_SLAVE_TERMINATED)) {
         uint8_t bda[6];
+        // 睡眠中掉线: 先回工作态再回连。停在 LEVEL1/2 的话, 回连后 CONNECT_IND 关了按键唤醒、
+        // LEVEL1/2 又不扫键, 按键失灵; 广播中按键还会用旧连接参数调 ll_conn_sleep_prologue()
+        ms_sleep_level = MS_SLEEP_LEVEL0;
+        mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL0);
         drv_ble_get_bda(bda);
         /* reset rtc & rf module */
         ex2_hal_uninit();
@@ -351,6 +355,7 @@ void app_ble_evt_dispatch(uint32_t events)
 __RAM_CODE void drv_rtc_isr_callback(void)
 {
     uint32_t rtc_count;
+    uint8_t scan_result;
 
     rtc_count = drv_rtc_read(OM_RTC);
     if(!rtc_init_value)
@@ -406,10 +411,11 @@ __RAM_CODE void drv_rtc_isr_callback(void)
         }
     }
 
-    if(ex2_app_mouse_scan())
+    scan_result = ex2_app_mouse_scan();
+    if(scan_result)
     {
-        if(MS_SLEEP_LEVEL0 != ms_sleep_level)
-        {
+        if((1 == scan_result)&&(MS_SLEEP_LEVEL0 != ms_sleep_level))
+        {                                       // 只发电量(2)时不退出休眠: 否则睡眠中电量一变就亮装饰灯、重新计休眠时间
             ms_sleep_level = MS_SLEEP_LEVEL0;
             mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL0);
             exled_rtc_count=0;
