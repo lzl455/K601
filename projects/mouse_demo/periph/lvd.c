@@ -52,8 +52,8 @@ uint8_t                         bat_value;          // 百分比值
 
 bool                            bkey_bat_update;
 bool                            bbat_update;
-bool                            bbat_check_scan;
-bool                            bcharging_bak;
+bool                            bbat_check_scan;    // 上电用了存储电量, 待约 1s 后用实测值校一次
+bool                            bcharging_bak;      // 上次的充电状态, 插拔时清零 bat_power_delay
 
 uint8_t                         lvd_scan_count;
 uint16_t                        bat_power_delay;
@@ -259,7 +259,7 @@ __RAM_CODE uint8_t bat_level_cal(uint8_t bat_level)
 ******************************************************************************/
 __RAM_CODE void bat_check(void)
 {
-    uint8_t bat_dat, bat_temp;
+    uint8_t bat_dat;
 
     bat_status &= ~(bcharge_ok|bcharging);
     if(0 != USB_5V_PIN)
@@ -280,11 +280,36 @@ __RAM_CODE void bat_check(void)
             bsave_status = true;
             bbat_update = true;
         }
+        else
+        {                                       // 存储值有效: 先用它显示, 约 1s 后再用实测值校一次
+            bbat_check_scan = true;
+        }
         bat_status &= ~blvd_power_on;
 
         lvd_value = (bat_status&0x1F);
         bat_value = bat_level_cal(lvd_value);
         return;
+    }
+
+    if((true == bbat_check_scan)&&(1000 <= sys_tick_count))
+    {                                           // 上电校准: 不充电时实测与存储值差 2 档及以上, 说明存储值已过期
+        bbat_check_scan = false;                // (如关机后单独充过电、换过电池), 改用实测值;
+        if((0 == (bat_status&bcharging))        // 差 1 档以内保留存储值, 免得每次唤醒在两档之间跳
+            &&((bat_dat >= lvd_value+2)||(lvd_value >= bat_dat+2)))
+        {
+            lvd_value = bat_dat;
+            bat_status &= 0xE0;
+            bat_status |= lvd_value;
+            bat_value = bat_level_cal(lvd_value);
+            bsave_status = true;
+            bbat_update = true;
+        }
+    }
+
+    if(bcharging_bak != (0 != (bat_status&bcharging)))
+    {                                           // 插拔充电线: 计数清零, 不把另一方向攒下的次数带过来
+        bcharging_bak = (0 != (bat_status&bcharging));
+        bat_power_delay = 0;
     }
 
     if(0 != (bat_status&bcharging))
@@ -330,6 +355,8 @@ __RAM_CODE void bat_check(void)
                 }
             }
         }
+        else if(0 != bat_power_delay)
+            bat_power_delay--;                  // 读数不偏高时回减: 净偏高 320 次才升一档, 偶发读数不累积
     }
     else
     {
@@ -358,6 +385,8 @@ __RAM_CODE void bat_check(void)
                 }
             }
         }
+        else if(0 != bat_power_delay)
+            bat_power_delay--;                  // 读数不偏低时回减: 射频发射瞬间等偶发低读数不累积
     }
 }
 

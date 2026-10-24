@@ -308,6 +308,8 @@ void app_ble_evt_dispatch(uint32_t events)
                 ex2_l2cap_update_conn_para(&ex2_gap_ppcp_value);
                 ex2_ll_polling_time_start();
                 exled_rtc_count=0;
+                if(0 == (bat_status&blvd_power_on))
+                    bbat_update = true;         // 每次连上都把当前电量通知主机, 不让电脑沿用旧值
 
                 if(ble_24g_ctrl&bom6239_conning)
                 {

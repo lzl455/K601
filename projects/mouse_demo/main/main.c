@@ -309,6 +309,7 @@ int main(void)
     bat_init();
 
     laod_flash_cfg();
+    bat_check();                                // 存储电量立即生效(屏幕和蓝牙电量服务都从 bat_value 取)
     scan_mode_swtich(iMODE_CHECK_POWERUP);
 
     memset(matrix_status, 0x00, iMATRIX_COL_NUM);
