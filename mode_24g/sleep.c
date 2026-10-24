@@ -61,6 +61,7 @@ void sleep_process(void)
                         break;
 
                     led_hint_process();
+                    flash_save_process();       // 睡眠里电量变了马上存, 拔线进深睡就丢了
                     if(0 == (bat_status&bcharging))
                     {
                         goto MCU_MODE_PD_PRPCESS;

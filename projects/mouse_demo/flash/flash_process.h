@@ -212,6 +212,7 @@ extern void laod_flash_cfg(void);
 
 extern void flash_save_status(void);
 extern void flash_save_cfg_dpi(void);
+extern void flash_save_process(void);
 
 extern void flash_load_ble_addr(void);
 extern void flash_save_ble_addr(void);

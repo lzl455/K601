@@ -155,6 +155,7 @@ __RAM_CODE uint8_t ex2_app_mouse_scan(void)
     else
     {                                           // 休眠: 不充电灭屏; 充电时 LEVEL1 继续显示电量, 到 LEVEL2 灭屏
         led_hint_process();
+        flash_save_process();                   // 睡眠里电量变了马上存, 进深睡就丢了
         if((MS_SLEEP_LEVEL1 == ms_sleep_level)&&(0 != (bat_status&bcharging)))
             disp_refresh();
         else
@@ -369,6 +370,7 @@ __RAM_CODE void drv_rtc_isr_callback(void)
         while (0 == (OM_RTC->CR & RTC_CR_ALARM0_WRITE_STATUS_MASK));
         OM_RTC->ALARM0 = (rtc_count + mMS_TO_TICK(16));
         led_hint_process();
+        flash_save_process();
         return;
     }
 

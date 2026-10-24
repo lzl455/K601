@@ -198,6 +198,7 @@ void charge_only_process(void)
         {                                   // 充电中：5V 供电，轮询刷新显示
             exled |= bled_WIR;              // 充电档点亮 Wir
             led_hint_process();             // 电量%/充电图标/低电提示(lvd)
+            flash_save_process();           // 充到的电量马上存, 拨走复位后才不显示旧电量
             disp_refresh();                 // 拔线灭屏后再插上时先发唤醒帧
 
             delayus(20000);

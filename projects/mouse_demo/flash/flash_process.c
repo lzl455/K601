@@ -507,6 +507,28 @@ m_id_check_none_bank:
 }
 
 /*******************************************************************************
+* 函数名称: flash_save_process()
+* 功能描述: 把待存的状态/配置写进 flash
+* 输入参数: 无
+* 输出参数: 无
+* 说    明: 工作态由 logo_process() 调用; 充电档和睡眠里不走 logo_process(),
+*           要在 led_hint_process() 后调用, 否则电量变了没存, 拔线进深睡或复位后显示旧电量
+*******************************************************************************/
+void flash_save_process(void)
+{
+    if(true==bsave_status)
+    {
+        bsave_status = false;
+        flash_save_status();
+    }
+    if(true==bsave_cfg_dpi)
+    {
+        bsave_cfg_dpi = false;
+        flash_save_cfg_dpi();
+    }
+}
+
+/*******************************************************************************
 * 函数名称: flash_save_mode_dpi()
 * 功能描述:
 * 输入参数: index
