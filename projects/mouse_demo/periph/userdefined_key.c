@@ -477,18 +477,6 @@ std_key_decode_1:
                     define_key_flag |= bdefine_key_send;
                     m_tx_count = 4;
                     break;
-                case iKEY_TYPE_WHEEL&0x07:      // 0x42 鼠标滚轮
-                    if(define_key_flag & bkey_decode_end)
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        mouse_data_z = decode_data_l;
-                        m_data_flag |= bmouse_data_send;
-                        m_tx_count = 4;
-                    }
-                    break;
             }
         }
         else
@@ -705,10 +693,6 @@ std_key_decode_1:
                                 }
                                 break;
                             case iKEY_DIR_LOCK&0x0F:
-
-                                break;
-                            case iKEY_WHEEL&0x0F:
-                                wheel_status |= bwheel_press;
 
                                 break;
                         }

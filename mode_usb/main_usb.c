@@ -61,7 +61,6 @@ int main_usb(void)
         if(0 != (sys_ctrl&bscan_flag))
         {
             matrixkey_scan();
-            wheel_scan();
 
             drv_wdt_keep_alive(OM_WDT);
             if(mMS_TO_TICK(15) < (drv_rtc_read(OM_RTC)-device_scan_time))

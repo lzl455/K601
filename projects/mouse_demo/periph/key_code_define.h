@@ -25,7 +25,6 @@
 //{
     #define iKEY_TYPE_SYS       0x40
     #define iKEY_TYPE_MOUSE     0x41
-    #define iKEY_TYPE_WHEEL     0x42
     #define iKEY_TYPE_FIRE      0x43
     #define iDEF_MOUSE_X        0x44
     #define iDEF_MOUSE_Y        0x45
@@ -99,7 +98,6 @@
         #define iKEY_WIN_MAC      0x3B
         #define iKEY_WIN_LOCK     0x3C
         #define iKEY_DIR_LOCK     0x3E
-        #define iKEY_WHEEL        0x3F
       //}
       #define iKEY_EX_FUN         0x40
       //{
