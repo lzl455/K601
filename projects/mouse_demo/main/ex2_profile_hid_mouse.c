@@ -15,6 +15,7 @@
 #include "ex2_api.h"
 #include "ex2_app_mouse.h"
 #include "mouse.h"
+#include "lvd.h"
 
 /*===========================================================================*/
 /* Macros.                                                                   */
@@ -49,7 +50,8 @@ static const ble_dis_pnp_t _dis_pnp_value = {
 
 /* BAS profile -------------------------------------------------------------- */
 #if (PROFILE_SIG_BAS)
-static uint8_t _bas_bat_lvl_value = 100;
+// 电量特征值直接指向 bat_value(与屏幕显示同一个值)。原来是单独的 _bas_bat_lvl_value,
+// 初值 100, 只有电量变化发通知时才更新: 复位后(切换蓝牙通道也会复位)主机读到的一直是 100。
 static uint16_t _bas_cccd_value;
 
 /**
@@ -61,7 +63,6 @@ static uint16_t _bas_cccd_value;
  */
 bool profile_bas_tx_notification(uint8_t level)
 {
-    _bas_bat_lvl_value = level;
     _bas_cccd_value=0x01;
     if (_bas_cccd_value & 0x01/*notify*/) {
         return ex2_att_tx_notification(ATT_HANDLE_BAS_BAT_LVL_CV, &level, 1);
@@ -330,7 +331,7 @@ const exe_att_ent_t ex2_tbl_gatt_database[] = {
     /* Battery PS: BatteryLevel's CD,CV,CCCD. */
     EX2_ATT_DEFINE(EX2_UUID_LEN_2B, BLE_UUID_SERVICE_PRIMARY,               EX2_ATT_VALUE_TYPE_DATA, 2, BLE_UUID_BATTERY_SERVICE,                  EX2_ATT_PER_READ),
     EX2_ATT_DEFINE(EX2_UUID_LEN_2B, BLE_UUID_CHARACTERISTIC,                EX2_ATT_VALUE_TYPE_DATA, 1, BLE_CHAR_PROP_READ | BLE_CHAR_PROP_NOTIFY, EX2_ATT_PER_READ),
-    EX2_ATT_DEFINE(EX2_UUID_LEN_2B, BLE_UUID_BATTERY_LEVEL_CHAR,            EX2_ATT_VALUE_TYPE_PTR,  1, &_bas_bat_lvl_value,                       EX2_ATT_PER_READ),
+    EX2_ATT_DEFINE(EX2_UUID_LEN_2B, BLE_UUID_BATTERY_LEVEL_CHAR,            EX2_ATT_VALUE_TYPE_PTR,  1, &bat_value,                                EX2_ATT_PER_READ),
     EX2_ATT_DEFINE(EX2_UUID_LEN_2B, BLE_UUID_DESCRIPTOR_CLIENT_CHAR_CONFIG, EX2_ATT_VALUE_TYPE_PTR,  2, &_bas_cccd_value,                          EX2_ATT_PER_READ | EX2_ATT_PER_WRITE | EX2_ATT_PER_ENCRYPT),
     #endif
 
