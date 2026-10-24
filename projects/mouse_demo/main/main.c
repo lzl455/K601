@@ -131,7 +131,7 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         mDECO_LED_OFF;                      // 进入休眠: 装饰灯灭
         MATRX_ALL_LOW;
         KEY_EX_LOW;
-        OM_PMU->PAD_PU_CTRL_1 = 0x02000001;  // 睡眠只留P20(MODE_24G)30K, P34(CHR_OK)150K; P21空脚输出低不上拉(原0x05漏电)
+        OM_PMU->PAD_PU_CTRL_1 = 0x02000000;  // 睡眠只留 P34(CHR_OK)150K; P20/P36 模式开关无上下拉; P21 空脚输出低不上拉
 
         drv_gpio_set_trig(OM_GPIO0, (1<<KEY_R0_PIN)|(1<<KEY_R1_PIN)|(1<<KEY_R2_PIN)|(1<<KEY_R3_PIN)| \
                                     (1<<KEY_R4_PIN)|(1<<KEY_R5_PIN)|(1<<KEY_R6_PIN)|(1<<KEY_R7_PIN), \
@@ -158,7 +158,7 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         drv_pmu_wakeup_pin_set(KEY_R7_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
         NVIC_DisableIRQ(WAKEUP_GPIO0_IRQn);
 
-        OM_PMU->PAD_PU_CTRL_1 = 0x020AA821;
+        OM_PMU->PAD_PU_CTRL_1 = 0x020AA820;  // 与上电初始化相同
         MATRX_ALL_IN;
         if(iDEVICE_TYPE_ERR != device_type) // 已进入蓝牙/2.4G 工作: 装饰灯亮
             mDECO_LED_ON;                   // (上电早期/充电档 device_type 为 ERR, 不亮)
@@ -260,10 +260,8 @@ int main(void)
 //------------------------------------------------------------------------------
 // 不同个案，需要根据实际原理图设置初始化IO状态
     OM_PMU->PAD_PU_CTRL = 0x00AAAA00;       
-    OM_PMU->PAD_PU_CTRL_1 = 0x020AA821;     
-                                            
-                                            
-    OM_PMU->PAD_PD_CTRL = 0x0000000C;       
+    OM_PMU->PAD_PU_CTRL_1 = 0x020AA820;     // P20(MODE_24G)/P36(MODE_BT) 模式开关: 无上下拉输入
+    OM_PMU->PAD_PD_CTRL = 0x0000000C;       // 只有 P02/P03(USB D-/D+) 下拉
     OM_PMU->PAD_BUF_EN &= ~LVD_PIN_MASK;
     OM_PMU->PAD_BUF_EN |= (1<<MODE_BT_PIN | 1<<MODE_24G_PIN);
 

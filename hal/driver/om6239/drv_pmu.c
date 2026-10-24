@@ -157,13 +157,13 @@ __RAM_CODE void drv_pmu_set_low_power_mode(pmu_lpm_t lpm)
                 OM_PMU->LPMS = (lpms & (~PMU_LPMS_LOW_PWR_MODE_EN_MASK)) | (uint32_t)lpm;
                 if (lpm == PMU_LPM_DEEP_SLEEP) {
                     OM_PMU->PAD_PU_CTRL = 0x00AAAA00;
-                    OM_PMU->PAD_PU_CTRL_1 = 0x02000000;     // 只留 P34(CHR_OK) 150K; P20 模式开关深睡不上拉(避免拨档接地时漏电); P21 空脚不上拉
+                    OM_PMU->PAD_PU_CTRL_1 = 0x02000000;     // 只留 P34(CHR_OK) 150K; P20/P36 模式开关无上下拉
                     OM_PMU->PAD_PD_CTRL = 0x0000000C;       // 只留 P02/P03 下拉
-                    OM_PMU->PAD_BUF_EN &= ~(1<<MODE_BT_PIN | 1<<MODE_24G_PIN);
+                    OM_PMU->PAD_BUF_EN &= ~(1<<MODE_BT_PIN | 1<<MODE_24G_PIN);  // 模式开关输入缓冲关闭, 深睡不读
 
-                    OM_GPIO0->DATAOUT  = 0xF800FFF1;        // P01/P23(装饰灯)都输出低, 灯灭
-                    OM_GPIO0->OUTENSET = 0x07FC0003;
-                    OM_GPIO0->OUTENCLR = ~0x07FC0003;
+                    OM_GPIO0->DATAOUT  = 0xF800FFF1;        // P01/P23(装饰灯)都输出低, 灯灭; P21 输出低
+                    OM_GPIO0->OUTENSET = 0x07FE0003;        // P21 空脚也输出低: 去掉上拉后若仍为输入会浮空
+                    OM_GPIO0->OUTENCLR = ~0x07FE0003;
                     delayus(3000);
 
                     OM_RCC->CLKGATE = 0x0742;
