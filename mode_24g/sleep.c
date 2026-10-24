@@ -48,6 +48,8 @@ void sleep_process(void)
                 sys_ctrl |= bscan_flag;
                 bperiph_int = 0;
                 device_led_off();
+                logo_off();                 // exio_ctrl=0xFF 并发一帧: 54E 扩展列拉低,
+                exLogo_send();              // 扩展列上的按键(空格/方向键等)也能唤醒
 
                 while(1)
                 {
