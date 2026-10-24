@@ -354,7 +354,7 @@ define_key_process:
 
 uint8_t const matrixkey_c_tbl[] = {
     8, 10,  6,  7, 14, 13, 12, 11,
-   15,  9, 17,  0, 16,  0,  0,  0,
+   15,  9, 0,  16, 17,  0,  0,  0,
 };
 
 #define  DELAY
