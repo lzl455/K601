@@ -347,7 +347,8 @@ __RAM_CODE void drv_rtc_isr_callback(void)
     }
 
     if(MS_SLEEP_LEVEL2 == ms_sleep_level)
-    {
+    {                                           // LEVEL2(充电时不深睡): 广播/连接已停, 没有射频中断喂狗,
+        drv_wdt_keep_alive(OM_WDT);             // 由这里每 16ms 喂一次, 否则会被看门狗周期性复位
         while (0 == (OM_RTC->CR & RTC_CR_ALARM0_WRITE_STATUS_MASK));
         OM_RTC->ALARM0 = (rtc_count + mMS_TO_TICK(16));
         led_hint_process();
