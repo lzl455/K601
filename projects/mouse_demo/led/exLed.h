@@ -15,12 +15,16 @@
 // UART 帧格式(博仪创 6PIN 数码管驱动说明书 V1.2.3, 115200 8N1)
 //
 // BYTE0-1 = 0x00 0xAA 帧头
-// BYTE2   = 模式: 0x00共阴 0x01共阳 0x02关机(驱动板延时1s休眠)
+// BYTE2   = 模式: 0x00共阴 0x01共阳 0x02关机(灭屏, 驱动板延时1s休眠)
 // BYTE3-6 = DIG1~DIG4 灯号位图, 需要点亮的位为1(见下方灯号说明)
 // BYTE7   = DIG5 驱动板MCU脚位电平, 为1输出高:
 //           bit0=PB1(脚14) bit1=PB2(脚15) bit2=PB3(脚16) bit3=PB4(脚1)
 //           bit4=PB5(脚2)  bit5=PA0(脚3)  bit6=PA1(脚4)
+//           本板这些脚未接, 固定发 CMD_DIG5
 // BYTE8   = SUM = 0x100 - (BYTE2..BYTE7 之和的低8位)
+//
+// 驱动板上电即灭灯休眠, 串口下降沿唤醒; 唤醒后 1s 内收不到正确的显示数据会再次休眠
+// (驱动说明书"软件说明"第1条)。所以灭屏只能发关机帧, 亮屏时第一帧只当唤醒帧, 随后补发正式帧。
 //
 // 驱动板按"灯号"驱动 30 颗 LED(6 脚交叉复用), exled bit(n-1) = 灯n,
 // 发送时按字节拆成 DIG1(灯1~8) DIG2(灯9~16) DIG3(灯17~24) DIG4(灯25~30)。
@@ -45,8 +49,10 @@
 #define CMD_HEARDER_0           0x00
 #define CMD_HEARDER_1           0xAA
 #define CMD_CS_SUM              0x00
+#define CMD_DIG5                0xFF            // DIG5: 驱动板 PB1~PB5/PA0/PA1 本板未接, 固定输出高
 
-extern uint8_t                  exled_ctrl;
+extern uint8_t                  exled_ctrl;     // 置 0x02 再 exLogo_send() 发关机帧, 发完自动回 0x00
+extern bool                     bdisp_off;      // true: 最后发出的是关机帧(屏灭)
 
 extern uint32_t                 exled;
 //{
@@ -82,10 +88,6 @@ extern uint32_t                 exled;
     #define bled_DIGIT_100      (bled_1_B|bled_1_C| \
                                  bled_2_A|bled_2_B|bled_2_C|bled_2_D|bled_2_E|bled_2_F| \
                                  bled_3_A|bled_3_B|bled_3_C|bled_3_D|bled_3_E|bled_3_F)   // "1 0 0"
-//}
-extern uint8_t                  exio_ctrl;
-//{
-    #define bpwm_off            (1<<6)              // DIG5 bit6 = 驱动板 PA1
 //}
 
 //-----------------------------------------------------------------------------;

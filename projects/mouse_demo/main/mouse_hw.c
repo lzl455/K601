@@ -103,8 +103,7 @@ pmu_lpm_t pm_checker_callback(void)
             ex2_stk_uninit();
             //进入深睡眠前需要存一些配置信息(如dpi、模式、地址等)到HS_PMU->SCRATCH, 醒来后可通过OM_CPM->RSTCTRL判断复位原因决定广播还是回连。
 
-            exled_ctrl = 0x02;
-            exLogo_send();
+            disp_off();                         // 进 LEVEL2 时已灭屏, 这里只是兜底
 
             mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
             drv_pmu_set_low_power_mode(PMU_LPM_DEEP_SLEEP);
@@ -156,10 +155,12 @@ __RAM_CODE uint8_t ex2_app_mouse_scan(void)
             led_hint_process();
     }
     else
-    {
-        logo_off();
+    {                                           // 休眠: 不充电灭屏; 充电时 LEVEL1 继续显示电量, 到 LEVEL2 灭屏
         led_hint_process();
-        exLogo_send();
+        if((MS_SLEEP_LEVEL1 == ms_sleep_level)&&(0 != (bat_status&bcharging)))
+            disp_refresh();
+        else
+            disp_off();
     }
 	scan_mode_swtich(iMODE_CHECK_DELAY);
 
@@ -246,15 +247,13 @@ extern void stk_notify_event_app(uint32_t evt);
  * 从工作状态直接进入 LEVEL2(广播超时 / 主机断开)
  * 不充电时 pm_checker_callback() 随后进深睡; 充电时停在 LEVEL2,
  * 所以这里要把休眠状态配齐, 与 LEVEL1 -> LEVEL2 路径的最终状态一致:
- *   - exio_ctrl=0xFF 并发一帧: 54E 扩展列(PB1~PB5/PA0/PA1)拉低,
- *     空格/方向键/小键盘/Fn 等扩展列上的按键也能唤醒
+ *   - 灭屏(LEVEL2 充电时也灭屏)
  *   - 配按键唤醒, 关装饰灯
  */
 static void ble_enter_sleep_level2(void)
 {
     ms_sleep_level = MS_SLEEP_LEVEL2;
-    logo_off();
-    exLogo_send();
+    disp_off();
     mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
 }
 
@@ -309,7 +308,6 @@ void app_ble_evt_dispatch(uint32_t events)
                 ex2_l2cap_update_conn_para(&ex2_gap_ppcp_value);
                 ex2_ll_polling_time_start();
                 exled_rtc_count=0;
-                exio_ctrl = 0;
 
                 if(ble_24g_ctrl&bom6239_conning)
                 {
@@ -340,7 +338,6 @@ void app_ble_evt_dispatch(uint32_t events)
         ble_24g_ctrl |= bom6239_sync_ing;
         matrixkey_scan();
         scan_mode_swtich(iMODE_CHECK_DELAY);
-        logo_off();
         logo_process();
         device_led_process();
     }
@@ -384,8 +381,7 @@ __RAM_CODE void drv_rtc_isr_callback(void)
                     ms_sleep_level = MS_SLEEP_LEVEL1;
                     mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL1);
 
-                    logo_off();
-                    ex2_ll_set_next_polling_time(1);
+                    ex2_ll_set_next_polling_time(1); // 灭屏与否在随后的 ex2_app_mouse_scan() 里处理
                 }
                 sys_tick_count += 8;
 
