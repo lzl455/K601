@@ -346,7 +346,6 @@ int main(void)
         sys_tick_count = 0;
         ble_24g_ctrl &= ~bom6239_conning;
         OM_PMU->SW_RSVD1 &= ~RSVD1_RF_CONN_EN;
-        bpower_on_icon = true;                  // 上电回连期间蓝牙/2.4G 图标常亮, 不慢闪
     }
     else
     {  // 休眠唤醒进入
