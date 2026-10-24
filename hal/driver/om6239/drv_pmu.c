@@ -161,7 +161,7 @@ __RAM_CODE void drv_pmu_set_low_power_mode(pmu_lpm_t lpm)
                     OM_PMU->PAD_PD_CTRL = 0x0000000C;       // 只留 P02/P03 下拉
                     OM_PMU->PAD_BUF_EN &= ~(1<<MODE_BT_PIN | 1<<MODE_24G_PIN);
 
-                    OM_GPIO0->DATAOUT  = 0xF800FFF3;
+                    OM_GPIO0->DATAOUT  = 0xF800FFF1;        // P01/P23(装饰灯)都输出低, 灯灭
                     OM_GPIO0->OUTENSET = 0x07FC0003;
                     OM_GPIO0->OUTENCLR = ~0x07FC0003;
                     delayus(3000);
