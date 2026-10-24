@@ -145,11 +145,20 @@
 //----------------------------------------------
 // LED
 //
-#define ARGB_OUT_PIN            (0*8+1)
-//#define ARGB_OFF_PIN            (0*8+0)
 #define UART_54E_PIN            (0*8+0)
 
-#define VED_VDD_PIN             (2*8+3)         // 锁灯/背光供电, 本机不用, 初始化后常输出低
+//----------------------------------------------
+// 装饰灯: P23 接正极, P01 接负极。工作时亮, 休眠时灭
+// 灭时两脚都输出低, LED 两端无电压(不反偏)
+//
+#define DECO_LED_P_PIN          (2*8+3)
+#define DECO_LED_N_PIN          (0*8+1)
+
+#define mDECO_LED_ON            {OM_GPIO0->DATAOUTCLR = (1u<<DECO_LED_N_PIN);\
+                                 OM_GPIO0->DATAOUTSET = (1u<<DECO_LED_P_PIN);\
+                                 OM_GPIO0->OUTENSET = (1u<<DECO_LED_P_PIN)|(1u<<DECO_LED_N_PIN);}
+#define mDECO_LED_OFF           {OM_GPIO0->DATAOUTCLR = (1u<<DECO_LED_P_PIN)|(1u<<DECO_LED_N_PIN);\
+                                 OM_GPIO0->OUTENSET = (1u<<DECO_LED_P_PIN)|(1u<<DECO_LED_N_PIN);}
 //
 //----------------------------------------------
 // 电源其他

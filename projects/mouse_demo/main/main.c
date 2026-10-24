@@ -126,6 +126,7 @@ void mouse_periph_wakeup_enable(uint8_t mask)
     drv_pmu_clear_wakeup();
 
     if(mask & WAKEUP_BTN_MASK) { /* button only faling edge wakeup*/
+        mDECO_LED_OFF;                      // 进入休眠: 装饰灯灭
         MATRX_ALL_LOW;
         KEY_EX_LOW;
         OM_PMU->PAD_PU_CTRL_1 = 0x02000001;  // 睡眠只留P20(MODE_24G)30K, P34(CHR_OK)150K; P21空脚输出低不上拉(原0x05漏电)
@@ -157,6 +158,8 @@ void mouse_periph_wakeup_enable(uint8_t mask)
 
         OM_PMU->PAD_PU_CTRL_1 = 0x020AA821;
         MATRX_ALL_IN;
+        if(iDEVICE_TYPE_ERR != device_type) // 已进入蓝牙/2.4G 工作: 装饰灯亮
+            mDECO_LED_ON;                   // (上电早期/充电档 device_type 为 ERR, 不亮)
     }
 
     OM_CRITICAL_END();
@@ -274,7 +277,7 @@ int main(void)
     OM_PMU->PAD_BUF_EN &= ~LVD_PIN_MASK;
     OM_PMU->PAD_BUF_EN |= (1<<MODE_BT_PIN | 1<<MODE_24G_PIN);
 
-    OM_GPIO0->DATAOUT = 0xFFE5FFFF;           
+    OM_GPIO0->DATAOUT = 0xFFE5FFFD;         // P01(装饰灯负极)/P21/P23(装饰灯正极)/P24 输出低, 装饰灯先灭
     OM_GPIO0->OUTENSET = 0x841EA003;          
     OM_GPIO0->OUTENCLR = ~0x841EA003;         
 //------------------------------------------------------------------------------
@@ -396,6 +399,7 @@ soft_reset_process:
         b24g_nromal = false;
         flash_load_ble_addr();
         device_led_on();
+        mDECO_LED_ON;                       // 开机进入蓝牙/2.4G: 装饰灯亮
 
         key_ctrl &= ~bwin_mac_sataus;           // 目前品旭的要求系统与模式强关联，需要先加载模式，再设置系统类型
         if(sys_mode&(1<<(device_type&0x07)))
