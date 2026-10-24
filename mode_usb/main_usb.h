@@ -19,7 +19,6 @@
 
 #include "led.h"
 #include "lvd.h"
-#include "wheel.h"
 
 #include "sleep.h"
 #include "userdefined_key.h"

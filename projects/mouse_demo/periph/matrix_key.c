@@ -425,7 +425,6 @@ __RAM_CODE void matrixkey_scan(void)
     device_key = 0;
     special_key = 0;
     key_ctrl_ex &= ~(bgost_key|bcom_ctrl_status);
-    wheel_status &= ~bwheel_press;
 
     modifier_key_tmp = 0;
     multi_data_tmp_l = 0;
@@ -467,8 +466,12 @@ __RAM_CODE void matrixkey_scan(void)
         }
     }
 
-    matrix_status[0] |= (matrix_status[15]&0x06);
-    matrix_status[9] |= (matrix_status[16]&0x02)|((matrix_status[17]&0x04)<<2);
+                                                // 解码只到 C14, C15~C17 上的键并进 C0/C9 的空位:
+    matrix_status[0] |= (matrix_status[15]&0x06)            // C15 R1/R2(左右Shift) -> C0 R1/R2
+                      | (matrix_status[17]&0x20);           // C17 R5(Calculator)    -> C0 R5
+    matrix_status[9] |= (matrix_status[16]&0x02)            // C16 R1(左Win)         -> C9 R1
+                      | ((matrix_status[16]&0x80)>>1)       // C16 R7(WWW Search)    -> C9 R6
+                      | ((matrix_status[17]&0x04)<<2);      // C17 R2(右Win)         -> C9 R4
 
     matrixkey_value();
     key_process();

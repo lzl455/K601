@@ -192,28 +192,7 @@ void LEDC_IRQHandler(void)
 
 void ENCODER_IRQHandler(void)
 {
-    #if (RTE_ENCODER)
-    if (OM_ENCODER->VALID & ENCODER_VALID_CNT_MASK) {
-        if(OM_ENCODER->CNT & 0x08) {
-            wheel_data = 0xf0|OM_ENCODER->CNT;
-        } else {
-            wheel_data = OM_ENCODER->CNT&0x0f;
-        }
-
-        bperiph_int =1;
-        if(iDEVICE_TYPE_BT2 >= device_type)
-        {
-            if(ms_sleep_level == MS_SLEEP_LEVEL1) {
-                ms_sleep_level = MS_SLEEP_LEVEL0;
-                mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL0);
-
-                ex2_app_mouse_scan();
-                ll_conn_sleep_prologue();
-                ex2_ll_set_next_polling_time(0);
-            }
-        }
-    }
-    #endif /* RTE_ENCODER */
+    /* 本机无编码器/滚轮(RTE_ENCODER=0), 中断不会触发 */
 }
 
 #endif  /* (RTE_ISR) */

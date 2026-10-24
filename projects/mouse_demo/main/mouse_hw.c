@@ -27,7 +27,7 @@
 
 /**
  * @file     mouse_sw.c
- * @brief    ble mouse sensor & wheel scan use io simulate by hardware
+ * @brief    ble keyboard: key scan, sleep levels and BLE app events
  * @date     20 JUN 2024
  * @author   OnMicro SW Team
  *
@@ -52,7 +52,6 @@
 #include "main.h"
 #include "led.h"
 #include "lvd.h"
-#include "wheel.h"
 #include "exLed.h"
 
 #include "matrix_key.h"
@@ -145,7 +144,6 @@ __RAM_CODE uint8_t ex2_app_mouse_scan(void)
     if(MS_SLEEP_LEVEL0 == ms_sleep_level)
     {
         matrixkey_scan();
-        wheel_scan();
         logo_process();
 
         lvd_scan_count++;
@@ -308,6 +306,8 @@ void app_ble_evt_dispatch(uint32_t events)
                 ex2_l2cap_update_conn_para(&ex2_gap_ppcp_value);
                 ex2_ll_polling_time_start();
                 exled_rtc_count=0;
+                if(0 == (bat_status&blvd_power_on))
+                    bbat_update = true;         // 每次连上都把当前电量通知主机, 不让电脑沿用旧值
 
                 if(ble_24g_ctrl&bom6239_conning)
                 {
@@ -338,6 +338,7 @@ void app_ble_evt_dispatch(uint32_t events)
         ble_24g_ctrl |= bom6239_sync_ing;
         matrixkey_scan();
         scan_mode_swtich(iMODE_CHECK_DELAY);
+        led_hint_process();                     // 广播期间(上电回连/对码)也显示电量
         logo_process();
         device_led_process();
     }
