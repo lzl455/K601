@@ -377,10 +377,10 @@ void led_hint_process(void)
     if(0 != (bat_status&blvd_power_on))
         return;
 
-    exled &= 0xFFC000F9;                        // 只清数字段, 图标位(bit0,3~7)保留
+    exled &= ~bled_DIGIT_ALL;                   // 只清数字段, 图标位保留
     if(100 == bat_value)
     {
-        exled |= (0x001FBF06);                  // 1 0 0
+        exled |= bled_DIGIT_100;                // 1 0 0
     }
     else
     {
