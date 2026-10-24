@@ -751,18 +751,6 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\led\logo_mode.c</PathWithFileName>
-      <FilenameWithoutPath>logo_mode.c</FilenameWithoutPath>
-      <RteFlg>0</RteFlg>
-      <bShared>0</bShared>
-    </File>
-    <File>
-      <GroupNumber>10</GroupNumber>
-      <FileNumber>43</FileNumber>
-      <FileType>1</FileType>
-      <tvExp>0</tvExp>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <bDave2>0</bDave2>
       <PathWithFileName>..\led\exLed.c</PathWithFileName>
       <FilenameWithoutPath>exLed.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>

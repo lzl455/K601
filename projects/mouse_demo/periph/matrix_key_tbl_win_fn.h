@@ -34,7 +34,7 @@ unsigned char           const   matrixkey_win_fn_tbl[] =
     iSTD_Q,              iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_TAB,            iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_A,              iKEY_TYPE_STD|iKEY_PRESS,
-    iSTD_ESCAPE,         iKEY_TYPE_STD|iKEY_PRESS,
+    iKEY_DEFAULT,        iKEY_TYPE_SPECIAL,
     iSTD_Z,              iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_NULL,           iKEY_TYPE_INVALID,
     iSTD_WAVE,           iKEY_TYPE_STD|iKEY_PRESS,
