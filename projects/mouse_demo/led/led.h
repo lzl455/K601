@@ -28,7 +28,7 @@
 
 
 extern uint32_t                 exled_rtc_count;    // 54E 显示刷新节拍(定义在 led.c)
-extern bool                     bpower_on_icon;     // 上电后第一次回连: 模式图标常亮不闪
+extern bool                     bpower_on_icon;     // 上电: 模式图标先常亮 3s, 没连上再慢闪
 
 //-----------------------------------------------------------------------------;
 // 函数引用

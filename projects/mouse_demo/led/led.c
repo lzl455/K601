@@ -25,7 +25,7 @@
 // 变量定义区
 //
 bool                            bdevice_led_status;
-bool                            bpower_on_icon;     // 上电后第一次回连: 模式图标常亮不闪(main 上电分支置位)
+bool                            bpower_on_icon;     // 上电: 模式图标先常亮 3s(main 上电分支置位)
 
 uint8_t                         device_conn_index=0;
 uint8_t                         device_hint_count;
@@ -117,7 +117,7 @@ extern void key_into_fcc_test(void);
 * 功能描述: 模式图标(BT1/BT2/2.4G)回连/对码闪烁
 * 输入参数:
 * 输出参数:
-* 说    明: 对码快闪(250ms); 回连慢闪(1s), 但上电后第一次回连图标常亮
+* 说    明: 对码快闪(250ms); 回连/未连接慢闪(1s); 上电先常亮 3s, 3s 内没连上再慢闪
 ******************************************************************************/
 void device_led_process(void)
 {
@@ -189,8 +189,17 @@ void device_led_process(void)
                 }
 
                 if(true == bpower_on_icon)
-                {                                   // 上电回连: 当前模式图标常亮
-                    device_led_on();
+                {                                   // 上电: 当前模式图标先常亮 3s, 3s 内连上就一直亮
+                    if(mMS_TO_TICK(3000) < (rtc_cur_value - led_delay_count))
+                    {                               // 3s 还没连上: 转入未连接慢闪, 从灭开始
+                        bpower_on_icon = false;
+                        bdevice_led_status = false;
+                        led_delay_count = rtc_cur_value;
+                        device_led_off();
+                        exled_rtc_count=0;
+                    }
+                    else
+                        device_led_on();
                 }
                 else if(false == bdevice_led_status)
                 {
@@ -216,7 +225,7 @@ void device_led_process(void)
             else if(2 == device_conn_index)
             {
                 device_conn_index = 0;
-                bpower_on_icon = false;             // 上电回连完成, 之后的回连照常慢闪
+                bpower_on_icon = false;             // 上电 3s 内已连上, 之后的回连照常慢闪
                 ble_24g_ctrl &= ~bom6239_sync_ing;
             }
             return;
