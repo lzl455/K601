@@ -27,7 +27,7 @@ unsigned char           const   matrixkey_mac_fn_tbl[] =
     iSTD_NULL,           iKEY_TYPE_STD|iKEY_PRESS|iRIGHT_SHIFT,     // C15 R2
     iSTD_NULL,           iKEY_TYPE_INVALID,
     iSTD_NULL,           iKEY_TYPE_STD|iKEY_PRESS|iRIGHT_CTRL,
-    iSTD_NULL,           iKEY_TYPE_INVALID,
+    iMMK_CALCULATOR_L,   iKEY_TYPE_MMK | iMMK_CALCULATOR_H,    // C17 R5 计算器(Calculator)
     iSTD_NULL,           iKEY_TYPE_STD|iKEY_PRESS|iLEFT_CTRL,
     iMMK_VOLUMEUP_L,    iKEY_TYPE_MMK | iMMK_VOLUMEUP_H,       // FN+F5 音量+
 // C1
@@ -109,7 +109,7 @@ unsigned char           const   matrixkey_mac_fn_tbl[] =
     iSTD_NULL,           iKEY_TYPE_STD|iKEY_PRESS|iLEFT_ALT,
     iSTD_NULL,           iKEY_TYPE_STD|iKEY_PRESS|iRIGHT_GUI,       // C17 R2
     iSTD_NULL,           iKEY_TYPE_STD|iKEY_PRESS|iRIGHT_ALT,
-    iSTD_NULL,           iKEY_TYPE_INVALID,
+    iMMK_WWW_SEARCH_L,   iKEY_TYPE_MMK | iMMK_WWW_SEARCH_H,    // C16 R7 网页搜索(WWW Search)
     iSTD_SNAPSHOT,       iKEY_TYPE_STD|iKEY_PRESS,
 // C10
     iSTD_NULL,           iKEY_TYPE_INVALID,
