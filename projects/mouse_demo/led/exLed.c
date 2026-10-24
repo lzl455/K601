@@ -30,12 +30,18 @@ uint8_t                         exio_ctrl;
 //-----------------------------------------------------------------------------;
 // LOCAL FUNCTION 
 //
+//   54E 串口 115200 8N1, 每位 8.68us。位宽 = uart_delay() + exLogo_send_byte() 每位约 8.5 周期开销,
+//   uart_delay() 约 5*time+10 周期(Keil armclang 6.16 生成: nop/subs/lsls/bne 每圈 5 周期)。
+//   48MHz(上电/2.4G/充电档): 需 416.7 周期 -> time=80, 8.71us(+0.4%)
+//   12MHz(蓝牙):             需 104.2 周期 -> time=17, 8.52us(-1.8%)
+//   原值 64/14 位宽只有约 7.0~7.3us(快 16%~19%), 54E 收不到正确的帧, 数码管不亮。
+//   改动 exLogo_send_byte()/uart_delay() 或编译选项后需用示波器复核位宽。
 __RAM_CODE void uart_delay(void)
 {
-    uint8_t time= 64;
+    uint8_t time= 80;
 
     if(iDEVICE_TYPE_BT2 >= device_type)
-        time= 14;
+        time= 17;
     do
     {
         __NOP();
