@@ -288,6 +288,8 @@ int main(void)
                 exled_ctrl = 0;                 // 外挂显示屏的时候，用显示屏提示，否则用低压灯提示
                 exled = 0;
                 exled |= bled_BAT;              // 低压关机: 电池图标闪一下
+                exLogo_send();                  // 驱动板已休眠, 第一帧只当唤醒帧(同 disp_refresh)
+                delayus(20000);
                 exLogo_send();
                 delayus(500000);
                 exled_ctrl = 0x02;
