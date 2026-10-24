@@ -237,15 +237,5 @@ void device_led_process(void)
 void logo_process(void)
 {
     disp_refresh();
-
-    if(true==bsave_status)
-    {
-        bsave_status = false;
-        flash_save_status();
-    }
-    if(true==bsave_cfg_dpi)
-    {
-        bsave_cfg_dpi = false;
-        flash_save_cfg_dpi();
-    }
+    flash_save_process();
 }
