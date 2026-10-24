@@ -27,7 +27,7 @@
 
 /**
  * @file     mouse_sw.c
- * @brief    ble mouse sensor & wheel scan use io simulate by hardware
+ * @brief    ble keyboard: key scan, sleep levels and BLE app events
  * @date     20 JUN 2024
  * @author   OnMicro SW Team
  *
@@ -52,7 +52,6 @@
 #include "main.h"
 #include "led.h"
 #include "lvd.h"
-#include "wheel.h"
 #include "exLed.h"
 
 #include "matrix_key.h"
@@ -145,7 +144,6 @@ __RAM_CODE uint8_t ex2_app_mouse_scan(void)
     if(MS_SLEEP_LEVEL0 == ms_sleep_level)
     {
         matrixkey_scan();
-        wheel_scan();
         logo_process();
 
         lvd_scan_count++;

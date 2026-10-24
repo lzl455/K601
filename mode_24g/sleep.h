@@ -24,8 +24,6 @@
 //
  #define iPIN_WAKEUP            BIT_MASK(KEY_MODE0_R0)|BIT_MASK(KEY_MODE0_R1)| BIT_MASK(KEY_MODE0_R2)\
                                 |BIT_MASK(KEY_MODE0_R3)|BIT_MASK(SENSOR_MOTION)
-
- #define iPIN_WHEEL_MASK        BIT_MASK(WHEEL_A)|BIT_MASK(WHEEL_B)
 //=============================================================================;
 // 外部定义内部引用区                                                            ;
 //=============================================================================;

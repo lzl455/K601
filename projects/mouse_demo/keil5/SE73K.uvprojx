@@ -429,11 +429,6 @@
               <FileType>1</FileType>
               <FilePath>..\periph\userdefined_key.c</FilePath>
             </File>
-            <File>
-              <FileName>wheel.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\periph\wheel.c</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>

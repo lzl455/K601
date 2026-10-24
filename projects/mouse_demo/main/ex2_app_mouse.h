@@ -178,7 +178,7 @@ extern uint16_t hid_notification_is_enabled(void);
 
 /**
  *******************************************************************************
- * @brief scan button/sensor/wheel
+ * @brief scan keys and update the display/battery
  *
  * @return return 1 if have data to report
  *******************************************************************************

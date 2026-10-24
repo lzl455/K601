@@ -300,7 +300,7 @@ void laod_flash_cfg(void)
 
     //if(iSYS_WIN == sys_type)
         //memcpy(def_key_dat, flash_fifo, 250);
-        memcpy(def_key_dat, matrixkey_win_tbl, 250);
+        memcpy(def_key_dat, matrixkey_win_tbl, 15*8*2);     // 按键表 C0~C14 x R0~R7 x 2字节, 原来拷 250 读越界
 //----------------------------------------------------------------------------
 // WIN FN MODE
 //    flash_read(iKEY_MODE1_ADDR+255, 1);
@@ -316,7 +316,7 @@ void laod_flash_cfg(void)
 
     //if(iSYS_WIN == sys_type)
         //memcpy(def_key_fn_dat, flash_fifo, 250);
-        memcpy(def_key_fn_dat, matrixkey_win_fn_tbl, 250);
+        memcpy(def_key_fn_dat, matrixkey_win_fn_tbl, 15*8*2);
 
 ////----------------------------------------------------------------------------
 //// MAC MODE

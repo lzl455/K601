@@ -125,9 +125,6 @@
         #define iPWM_VALUE      5
         #define iDPI_SNIPER_0   6
         #define iDPI_SNIPER_1   7
-        #define iWHEEL_DPI      8
-        #define iWHEEL_REPORT   9
-        #define iWHEEL_ACC      10
     //}
     #define iMODE_ASS_ADDR      0xD5
     #define iCFG_SENSOE         0xD7

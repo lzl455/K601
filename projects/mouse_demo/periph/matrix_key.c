@@ -425,7 +425,6 @@ __RAM_CODE void matrixkey_scan(void)
     device_key = 0;
     special_key = 0;
     key_ctrl_ex &= ~(bgost_key|bcom_ctrl_status);
-    wheel_status &= ~bwheel_press;
 
     modifier_key_tmp = 0;
     multi_data_tmp_l = 0;
