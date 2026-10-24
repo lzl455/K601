@@ -259,14 +259,14 @@ int main(void)
     OM_RCC->CLKGATE |= RCC_DEV_CLK_GATE_GPIO_CLK_GATE_MASK;
 //------------------------------------------------------------------------------
 // 不同个案，需要根据实际原理图设置初始化IO状态
-    OM_PMU->PAD_PU_CTRL = 0xAAAAAA00;       // P04~P13 行、P14~P17 150K 上拉
-    OM_PMU->PAD_PU_CTRL_1 = 0x820AA800;     // P25~P31 列、P34(CHR_OK)、P37(BOOT) 150K 上拉; P20/P36 模式开关无上下拉
-    OM_PMU->PAD_PD_CTRL = 0x00000000;       // 无下拉
+    OM_PMU->PAD_PU_CTRL = 0xAAAAAA00;   
+    OM_PMU->PAD_PU_CTRL_1 = 0x820AA800; 
+    OM_PMU->PAD_PD_CTRL = 0x00000000;   
     OM_PMU->PAD_BUF_EN &= ~LVD_PIN_MASK;
     OM_PMU->PAD_BUF_EN |= (1<<MODE_BT_PIN | 1<<MODE_24G_PIN);
 
-    OM_GPIO0->DATAOUT = 0xFFE1FFF1;         // P01/P23 装饰灯两脚低(先灭); 空脚 P02/P03/P21/P22/P24 低; P00/P32 高
-    OM_GPIO0->OUTENSET = 0x041E000F;        // 输出: P00~P03, P21~P24, P32; 其余输入(P14~P17/P37 上拉为高)
+    OM_GPIO0->DATAOUT = 0xFFE1FFF1;   
+    OM_GPIO0->OUTENSET = 0x041E000F;  
     OM_GPIO0->OUTENCLR = ~0x041E000F;
 //------------------------------------------------------------------------------
     device_type = iDEVICE_TYPE_ERR;
