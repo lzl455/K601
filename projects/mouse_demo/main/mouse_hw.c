@@ -243,6 +243,22 @@ extern uint16_t ll_ctrl_get_peer_company_id(void);
 extern void stk_notify_event_app(uint32_t evt);
 
 /*********************************************************************
+ * 从工作状态直接进入 LEVEL2(广播超时 / 主机断开)
+ * 不充电时 pm_checker_callback() 随后进深睡; 充电时停在 LEVEL2,
+ * 所以这里要把休眠状态配齐, 与 LEVEL1 -> LEVEL2 路径的最终状态一致:
+ *   - exio_ctrl=0xFF 并发一帧: 54E 扩展列(PB1~PB5/PA0/PA1)拉低,
+ *     空格/方向键/小键盘/Fn 等扩展列上的按键也能唤醒
+ *   - 配按键唤醒, 关装饰灯
+ */
+static void ble_enter_sleep_level2(void)
+{
+    ms_sleep_level = MS_SLEEP_LEVEL2;
+    logo_off();
+    exLogo_send();
+    mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
+}
+
+/*********************************************************************
  * LOCAL FUNCTIONS
  */
 void app_ble_evt_dispatch(uint32_t events)
@@ -274,8 +290,7 @@ void app_ble_evt_dispatch(uint32_t events)
     }
 
     if(events & EX2_EVENT_APP_MASTER_TERMINATED) {
-        ms_sleep_level=MS_SLEEP_LEVEL2;
-        mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);    // 充电时不深睡, 需配好按键唤醒(并关装饰灯)
+        ble_enter_sleep_level2();
     }
     if (events & (EX2_EVENT_APP_PAIR_COMPLETED | EX2_EVENT_APP_RECONNECT)) {
         if (events & EX2_EVENT_APP_RECONNECT) {
@@ -314,8 +329,7 @@ void app_ble_evt_dispatch(uint32_t events)
     }
     if (events & EX2_EVENT_APP_ADV_TIMEOUT) {
         if(mouse_state == MOUSE_LE_STATE_STOP) { /* 广播一直没有master连接，超时进入deepsleep*/
-            ms_sleep_level = MS_SLEEP_LEVEL2;
-            mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);    // 同上
+            ble_enter_sleep_level2();
         } else {
             ex2_app_mouse_broadcast_fsm();
         }
@@ -347,7 +361,8 @@ __RAM_CODE void drv_rtc_isr_callback(void)
     }
 
     if(MS_SLEEP_LEVEL2 == ms_sleep_level)
-    {
+    {                                           // LEVEL2(充电时不深睡): 广播/连接已停, 没有射频中断喂狗,
+        drv_wdt_keep_alive(OM_WDT);             // 由这里每 16ms 喂一次, 否则会被看门狗周期性复位
         while (0 == (OM_RTC->CR & RTC_CR_ALARM0_WRITE_STATUS_MASK));
         OM_RTC->ALARM0 = (rtc_count + mMS_TO_TICK(16));
         led_hint_process();
