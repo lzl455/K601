@@ -139,10 +139,8 @@ void usb_sleep(void)
         return;
     }
 
-    logo_off();
     mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
-    exled_ctrl = 0x02;
-    exLogo_send();
+    disp_off();
 
     if(0 == (usb_ctrl_flag & bwakeup_usb_enable))
     {                                       // 不可唤醒
@@ -210,7 +208,6 @@ usb_wakeup_process:
     mouse_periph_wakeup_enable(WAKEUP_ALL_DISABLE);
     sleep_into_work_rtc = drv_rtc_read(OM_RTC);
     exled_rtc_count=0;
-    exio_ctrl = 0;
 }
 
 /** @} */

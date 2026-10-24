@@ -19,7 +19,7 @@
 //
 uint8_t                         exled_ctrl;
 uint32_t                        exled;
-uint8_t                         exio_ctrl;
+bool                            bdisp_off;
 
 //-----------------------------------------------------------------------------;
 // LOCAL Table 
@@ -113,12 +113,15 @@ __RAM_CODE static void exLogo_send_byte(uint8_t data)
  */
 void exLogo_send(void)
 {
+    uint32_t dig;
     uint8_t cs;
 
+    dig = exled;
+    bdisp_off = false;
     if(0x02 == exled_ctrl)
-    {
-        exled = 0;
-        exio_ctrl = 0xFF;
+    {                                           // 关机帧: 灯号全 0; exled 保留, 亮屏时原样恢复
+        dig = 0;
+        bdisp_off = true;
     }
 
     OM_GPIO0->OUTENSET = (1<<UART_54E_PIN);
@@ -126,16 +129,16 @@ void exLogo_send(void)
     exLogo_send_byte(CMD_HEARDER_1);
     exLogo_send_byte(exled_ctrl);
     cs = exled_ctrl;
-    exLogo_send_byte((exled>>0)&0xFF);
-    cs += ((exled>>0)&0xFF);
-    exLogo_send_byte((exled>>8)&0xFF);
-    cs += ((exled>>8)&0xFF);
-    exLogo_send_byte((exled>>16)&0xFF);
-    cs += ((exled>>16)&0xFF);
-    exLogo_send_byte((exled>>24)&0xFF);
-    cs += ((exled>>24)&0xFF);
-    exLogo_send_byte(~exio_ctrl);
-    cs += ~exio_ctrl;
+    exLogo_send_byte((dig>>0)&0xFF);
+    cs += ((dig>>0)&0xFF);
+    exLogo_send_byte((dig>>8)&0xFF);
+    cs += ((dig>>8)&0xFF);
+    exLogo_send_byte((dig>>16)&0xFF);
+    cs += ((dig>>16)&0xFF);
+    exLogo_send_byte((dig>>24)&0xFF);
+    cs += ((dig>>24)&0xFF);
+    exLogo_send_byte(CMD_DIG5);
+    cs += CMD_DIG5;
     cs = 0-cs;
     exLogo_send_byte(cs);
     exled_ctrl = 0;

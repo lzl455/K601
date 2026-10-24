@@ -32,6 +32,7 @@ void sleep_process(void)
 {
     uint8_t i = 0;
     uint32_t rtc_value;
+    bool bcharge_full;
     static uint8_t no_dongle_time_count;
 
     switch(work_mode)
@@ -48,8 +49,9 @@ void sleep_process(void)
                 sys_ctrl |= bscan_flag;
                 bperiph_int = 0;
                 device_led_off();
-                logo_off();                 // exio_ctrl=0xFF 并发一帧: 54E 扩展列拉低,
-                exLogo_send();              // 扩展列上的按键(空格/方向键等)也能唤醒
+                bcharge_full = (0 != (bat_status&bcharge_ok));
+                if((0 == (bat_status&bcharging))||(true == bcharge_full))
+                    disp_off();             // 不充电或已充满: 进休眠即灭屏; 充电中继续显示电量到充满
 
                 while(1)
                 {
@@ -63,6 +65,13 @@ void sleep_process(void)
                     {
                         goto MCU_MODE_PD_PRPCESS;
                     }
+
+                    if(0 != (bat_status&bcharge_ok))
+                        bcharge_full = true;    // 充满后灭屏, 本次休眠内不再亮
+                    if(true == bcharge_full)
+                        disp_off();
+                    else
+                        disp_refresh();
                 }
 
                 rf_ctrl_reg |= (brf_sync_time|brf_sync_status);
@@ -98,7 +107,6 @@ void sleep_process(void)
                     rf_ctrl_reg &= ~(brf_sync_time|brf_sync_status);
 
                     mouse_periph_wakeup_enable(WAKEUP_ALL_DISABLE);
-                    logo_off();
                     key_tx_count = 0;
                     mmk_tx_count = 0;
                     rtc_value = drv_rtc_read(OM_RTC);
@@ -158,9 +166,7 @@ void sleep_process(void)
             break;
         default:                                // iMCU_MODE_PD:
 MCU_MODE_PD_PRPCESS:
-            logo_off();
-            exled_ctrl = 0x02;
-            exLogo_send();
+            disp_off();
 
             mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
             drv_pmu_set_low_power_mode(PMU_LPM_DEEP_SLEEP);

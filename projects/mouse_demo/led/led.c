@@ -25,6 +25,7 @@
 // 变量定义区
 //
 bool                            bdevice_led_status;
+bool                            bpower_on_icon;     // 上电后第一次回连: 模式图标常亮不闪(main 上电分支置位)
 
 uint8_t                         device_conn_index=0;
 uint8_t                         device_hint_count;
@@ -72,16 +73,40 @@ void device_led_off(void)
 }
 
 /*******************************************************************************
-* 函数名称: logo_off()
-* 功能描述: 关 54E 外挂显示(转关屏态)
-* 说    明: 本机无背光, 只控制 54E
+* 函数名称: disp_off()
+* 功能描述: 54E 灭屏: 发一次关机帧, 驱动板灭灯后 1s 休眠
+* 说    明: 本板 DIG5 脚未接, 灭屏只能靠关机帧。灭屏期间不能发显示帧,
+*           任何一帧都会唤醒驱动板重新亮屏; 亮屏统一走 disp_refresh()
 *******************************************************************************/
-void logo_off(void)
+void disp_off(void)
 {
-    if(0xFF != exio_ctrl)
+    if(false == bdisp_off)
     {
-        exled_rtc_count=0;
-        exio_ctrl = 0xFF;
+        exled_ctrl = 0x02;
+        exLogo_send();
+    }
+}
+
+/*******************************************************************************
+* 函数名称: disp_refresh()
+* 功能描述: 54E 亮屏刷新, 每 500ms 发一帧 exled
+* 说    明: 灭屏后的第一帧只用来唤醒驱动板(唤醒沿上的数据可能收不全),
+*           20ms 后补发正式帧。调用间隔要小于 1s, 否则驱动板会再次休眠
+*******************************************************************************/
+void disp_refresh(void)
+{
+    uint32_t rtc_temp;
+
+    rtc_temp = drv_rtc_read(OM_RTC);
+    if(true == bdisp_off)
+    {
+        exLogo_send();
+        exled_rtc_count = rtc_temp - mMS_TO_TICK(480);
+    }
+    else if((mMS_TO_TICK(500) < (rtc_temp-exled_rtc_count))||(0 == exled_rtc_count))
+    {
+        exled_rtc_count = rtc_temp;
+        exLogo_send();
     }
 }
 
@@ -92,7 +117,7 @@ extern void key_into_fcc_test(void);
 * 功能描述: 模式图标(BT1/BT2/2.4G)回连/对码闪烁
 * 输入参数:
 * 输出参数:
-* 说    明:
+* 说    明: 对码快闪(250ms); 回连慢闪(1s), 但上电后第一次回连图标常亮
 ******************************************************************************/
 void device_led_process(void)
 {
@@ -163,7 +188,11 @@ void device_led_process(void)
                     device_hint_count = 0;
                 }
 
-                if(false == bdevice_led_status)
+                if(true == bpower_on_icon)
+                {                                   // 上电回连: 当前模式图标常亮
+                    device_led_on();
+                }
+                else if(false == bdevice_led_status)
                 {
                     device_led_off();
                     if(mMS_TO_TICK(1000) < (rtc_cur_value - led_delay_count))
@@ -187,6 +216,7 @@ void device_led_process(void)
             else if(2 == device_conn_index)
             {
                 device_conn_index = 0;
+                bpower_on_icon = false;             // 上电回连完成, 之后的回连照常慢闪
                 ble_24g_ctrl &= ~bom6239_sync_ing;
             }
             return;
@@ -205,21 +235,14 @@ void device_led_process(void)
 
 /******************************************************************************
 * 函数名称: logo_process
-* 功能描述: 54E 显示刷新、flash 保存、54E 开关屏
+* 功能描述: 54E 显示刷新、flash 保存
 * 输入参数:
 * 输出参数:
-* 说    明:
+* 说    明: 只在亮屏的工作态调用(灭屏后再调用会唤醒驱动板亮屏)
 ******************************************************************************/
 void logo_process(void)
 {
-    uint32_t rtc_temp;
-
-    rtc_temp = drv_rtc_read(OM_RTC);
-    if((mMS_TO_TICK(500) < (rtc_temp-exled_rtc_count))||(0 == exled_rtc_count))
-    {
-        exled_rtc_count = rtc_temp;
-        exLogo_send();
-    }
+    disp_refresh();
 
     if(true==bsave_status)
     {
@@ -230,41 +253,5 @@ void logo_process(void)
     {
         bsave_cfg_dpi = false;
         flash_save_cfg_dpi();
-    }
-    if(iDEVICE_TYPE_24G == device_type)
-    {
-        if(true==bflash_ctrl)
-            return;
-    }
-
-    if(iDEVICE_TYPE_USB == device_type)
-    {
-        if(0 != (usb_ctrl_flag&busb_suspend_resume))
-        {
-            logo_off();
-            return;
-        }
-    }
-    else
-    {
-        if(ble_24g_ctrl&bom6239_sync_ing)
-        {
-            logo_off();
-            return;
-        }
-    }
-    if((bat_status & bcharging)==0)
-    {
-        if(iLOW_POWER>=bat_value)
-        {
-            logo_off();
-            return;
-        }
-    }
-
-    if(0 != exio_ctrl)                      // 唤醒 54E 显示
-    {
-        exio_ctrl = 0;
-        exled_rtc_count=0;
     }
 }

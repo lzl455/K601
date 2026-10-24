@@ -112,7 +112,6 @@ void rf_sync_ok_process(void)
         report_24g = ((report_dpi[key_mode]>>4)&0x03);
     m_tx_count = 0;
     exled_rtc_count=0;
-    exio_ctrl = 0;
 
     if(true == b24g_nromal)
         ble_24g_ctrl &= ~bom6239_sync_ing;

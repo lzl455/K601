@@ -180,11 +180,7 @@ void mouse_periph_wakeup_enable(uint8_t mask)
 
 void charge_only_process(void)
 {
-    uint32_t rtc_temp;
-
     device_led_off();                       // 无线模式灯不亮
-    logo_off();                             // 背光关(PWM恒灭)
-    exio_ctrl = 0;                          // 54E 保持工作态，显示电量
     exled_rtc_count = 0;
 
     while(1)
@@ -198,23 +194,16 @@ void charge_only_process(void)
 
         if(0 != USB_5V_PIN)
         {                                   // 充电中：5V 供电，轮询刷新显示
-            exled |= bled_WIR;              // 充电档点亮 Wir(关屏帧会清 exled, 每次刷新前补上)
+            exled |= bled_WIR;              // 充电档点亮 Wir
             led_hint_process();             // 电量%/充电图标/低电提示(lvd)
-
-            rtc_temp = drv_rtc_read(OM_RTC);
-            if((mMS_TO_TICK(500) < (rtc_temp-exled_rtc_count))||(0 == exled_rtc_count))
-            {
-                exled_rtc_count = rtc_temp;
-                exLogo_send();
-            }
+            disp_refresh();                 // 拔线灭屏后再插上时先发唤醒帧
 
             delayus(20000);
             sys_tick_count += 20;           // 充电档没有 RTC 节拍, 手动计时, 供 bat_check() 上电稳定等待
         }
         else
         {                                   // 未插线：关屏，STOP1 等事件唤醒
-            exled_ctrl = 0x02;              // 54E 关屏帧
-            exLogo_send();
+            disp_off();                     // 54E 关屏帧(已灭屏则不重发)
 
             mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
             drv_gpio_set_trig(OM_GPIO0, (1u<<MODE_BT_PIN)|(1u<<MODE_24G_PIN)|(1u<<iCHG_USB5V_PIN),
@@ -228,10 +217,9 @@ void charge_only_process(void)
 
             drv_pmu_set_low_power_mode(PMU_LPM_STOP1);
 
-            OM_CRITICAL_BEGIN();            // 醒来：清唤醒标志，恢复54E工作态
+            OM_CRITICAL_BEGIN();            // 醒来：清唤醒标志(插线后由 disp_refresh() 唤醒 54E)
             drv_pmu_clear_wakeup();
             OM_CRITICAL_END();
-            exio_ctrl = 0;
             exled_rtc_count = 0;
         }
     }
@@ -299,7 +287,6 @@ int main(void)
                 exled_ctrl = 0;                 // 外挂显示屏的时候，用显示屏提示，否则用低压灯提示
                 exled = 0;
                 exled |= bled_BAT;              // 低压关机: 电池图标闪一下
-                exio_ctrl = 0;
                 exLogo_send();
                 delayus(500000);
                 exled_ctrl = 0x02;
@@ -316,7 +303,6 @@ int main(void)
     ble_24g_ctrl &= ~bom6239_sync_ok;
     rtc_init_value = 0;
     exled_rtc_count=0;
-    exio_ctrl = 0;
     exled = 0;
     exLogo_send();                              // 初始化唤醒外挂芯片
 
@@ -359,6 +345,7 @@ int main(void)
         sys_tick_count = 0;
         ble_24g_ctrl &= ~bom6239_conning;
         OM_PMU->SW_RSVD1 &= ~RSVD1_RF_CONN_EN;
+        bpower_on_icon = true;                  // 上电回连期间蓝牙/2.4G 图标常亮, 不慢闪
     }
     else
     {  // 休眠唤醒进入
