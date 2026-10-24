@@ -131,7 +131,7 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         mDECO_LED_OFF;                      // 进入休眠: 装饰灯灭
         MATRX_ALL_LOW;
         KEY_EX_LOW;
-        OM_PMU->PAD_PU_CTRL_1 = 0x02000000;  // 睡眠只留 P34(CHR_OK)150K; P20/P36 模式开关无上下拉; P21 空脚输出低不上拉
+        OM_PMU->PAD_PU_CTRL_1 = 0x82000000;  // 睡眠只留 P34(CHR_OK)、P37(BOOT) 150K 上拉; P20/P36 模式开关无上下拉
 
         drv_gpio_set_trig(OM_GPIO0, (1<<KEY_R0_PIN)|(1<<KEY_R1_PIN)|(1<<KEY_R2_PIN)|(1<<KEY_R3_PIN)| \
                                     (1<<KEY_R4_PIN)|(1<<KEY_R5_PIN)|(1<<KEY_R6_PIN)|(1<<KEY_R7_PIN), \
@@ -158,7 +158,7 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         drv_pmu_wakeup_pin_set(KEY_R7_PIN, PMU_PIN_WAKEUP_TYPE_DISABLE);
         NVIC_DisableIRQ(WAKEUP_GPIO0_IRQn);
 
-        OM_PMU->PAD_PU_CTRL_1 = 0x020AA820;  // 与上电初始化相同
+        OM_PMU->PAD_PU_CTRL_1 = 0x820AA800;  // 与上电初始化相同
         MATRX_ALL_IN;
         if(iDEVICE_TYPE_ERR != device_type) // 已进入蓝牙/2.4G 工作: 装饰灯亮
             mDECO_LED_ON;                   // (上电早期/充电档 device_type 为 ERR, 不亮)
@@ -259,15 +259,15 @@ int main(void)
     OM_RCC->CLKGATE |= RCC_DEV_CLK_GATE_GPIO_CLK_GATE_MASK;
 //------------------------------------------------------------------------------
 // 不同个案，需要根据实际原理图设置初始化IO状态
-    OM_PMU->PAD_PU_CTRL = 0x00AAAA00;       
-    OM_PMU->PAD_PU_CTRL_1 = 0x020AA820;     // P20(MODE_24G)/P36(MODE_BT) 模式开关: 无上下拉输入
-    OM_PMU->PAD_PD_CTRL = 0x0000000C;       // 只有 P02/P03(USB D-/D+) 下拉
+    OM_PMU->PAD_PU_CTRL = 0xAAAAAA00;       // P04~P13 行、P14~P17 150K 上拉
+    OM_PMU->PAD_PU_CTRL_1 = 0x820AA800;     // P25~P31 列、P34(CHR_OK)、P37(BOOT) 150K 上拉; P20/P36 模式开关无上下拉
+    OM_PMU->PAD_PD_CTRL = 0x00000000;       // 无下拉
     OM_PMU->PAD_BUF_EN &= ~LVD_PIN_MASK;
     OM_PMU->PAD_BUF_EN |= (1<<MODE_BT_PIN | 1<<MODE_24G_PIN);
 
-    OM_GPIO0->DATAOUT = 0xFFE5FFFD;         // P01(装饰灯负极)/P21/P23(装饰灯正极)/P24 输出低, 装饰灯先灭
-    OM_GPIO0->OUTENSET = 0x841EA003;          
-    OM_GPIO0->OUTENCLR = ~0x841EA003;         
+    OM_GPIO0->DATAOUT = 0xFFE1FFF1;         // P01/P23 装饰灯两脚低(先灭); 空脚 P02/P03/P21/P22/P24 低; P00/P32 高
+    OM_GPIO0->OUTENSET = 0x041E000F;        // 输出: P00~P03, P21~P24, P32; 其余输入(P14~P17/P37 上拉为高)
+    OM_GPIO0->OUTENCLR = ~0x041E000F;
 //------------------------------------------------------------------------------
     device_type = iDEVICE_TYPE_ERR;
 
