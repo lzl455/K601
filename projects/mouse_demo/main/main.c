@@ -108,6 +108,7 @@ extern void rf_freq_make(void);
 extern pmu_lpm_t pm_checker_callback(void);
 extern uint32_t adv_interval_ms;
 extern void bat_check(void);
+extern bool bperiph_int;
 
 /******************************************************************************
 * 函数名称: mouse_periph_wakeup_enable()
@@ -126,6 +127,7 @@ void mouse_periph_wakeup_enable(uint8_t mask)
     drv_pmu_clear_wakeup();
 
     if(mask & WAKEUP_BTN_MASK) { /* button only faling edge wakeup*/
+        bperiph_int = 0;                    // 只记本次休眠里的按键唤醒(蓝牙模式下别处不清, LEVEL2 充电时按它复位)
         mDECO_LED_OFF;                      // 进入休眠: 装饰灯灭
         MATRX_ALL_LOW;
         KEY_EX_LOW;
