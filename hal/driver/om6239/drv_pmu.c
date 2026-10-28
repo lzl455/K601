@@ -158,12 +158,12 @@ __RAM_CODE void drv_pmu_set_low_power_mode(pmu_lpm_t lpm)
                 if (lpm == PMU_LPM_DEEP_SLEEP) {
                     OM_PMU->PAD_PU_CTRL = 0xAAAAAA00;       // P04~P13 行(唤醒源)、P14~P17 150K 上拉
                     OM_PMU->PAD_PU_CTRL_1 = 0x82000000;     // 只留 P34(CHR_OK)、P37(BOOT) 150K 上拉; P20/P36 模式开关无上下拉
-                    OM_PMU->PAD_PD_CTRL = 0x00000000;       // 无下拉
+                    OM_PMU->PAD_PD_CTRL = 0x0000000C;       // 只有 P02/P03(USB D-/D+) 下拉
                     OM_PMU->PAD_BUF_EN &= ~(1<<MODE_BT_PIN | 1<<MODE_24G_PIN);  // 模式开关输入缓冲关闭, 深睡不读
 
-                    OM_GPIO0->DATAOUT  = 0xF800FFF1;        // P00 高; P01/P23 装饰灯、空脚 P02/P03/P21/P24、列、KEY_EX 低
-                    OM_GPIO0->OUTENSET = 0x07FA000F;        // 输出: P00~P03, P21, P23~P32; 其余输入(P22 为 SWD TCK)
-                    OM_GPIO0->OUTENCLR = ~0x07FA000F;
+                    OM_GPIO0->DATAOUT  = 0xF800FFF1;        // P00 高; P01/P23 装饰灯、空脚 P21/P24、列、KEY_EX 低
+                    OM_GPIO0->OUTENSET = 0x07FA0003;        // 输出: P00/P01, P21, P23~P32; 其余输入(P02/P03 为 USB, P22 为 SWD TCK)
+                    OM_GPIO0->OUTENCLR = ~0x07FA0003;
                     delayus(3000);
 
                     OM_RCC->CLKGATE = 0x0742;

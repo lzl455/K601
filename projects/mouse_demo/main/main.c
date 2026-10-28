@@ -109,6 +109,9 @@ extern pmu_lpm_t pm_checker_callback(void);
 extern uint32_t adv_interval_ms;
 extern void bat_check(void);
 extern bool bperiph_int;
+extern bool busb_valid;
+extern void hi5_usb_init(void);
+extern void usb_disconnect(void);
 
 /******************************************************************************
 * 函数名称: mouse_periph_wakeup_enable()
@@ -169,11 +172,11 @@ void mouse_periph_wakeup_enable(uint8_t mask)
 
 /******************************************************************************
 * 函数名称: charge_only_process()
-* 功能描述: 充电位处理：不做有线键盘(USB 不枚举)，仅充电 + 电量显示
+* 功能描述: 充电位处理：不做有线键盘，仅充电 + 电量显示 + USB 升级
 * 输入参数: 无
 * 输出参数: 无
-* 说    明: USB 枚举只在 mouse_usb_init() 里使能，此处不调用即等于去掉
-*           有线功能；充电由硬件 5V 直充，与协议栈无关。
+* 说    明: 插线时连上 USB，只处理上位机命令(升级等)，不扫键、不发按键；
+*           充电由硬件 5V 直充，与协议栈无关。
 *           插线时由 5V 供电，轮询刷新 54E 充电/电量显示；未插线时发关屏
 *           帧后 STOP1，唤醒源 = 按键 / 模式开关两脚上升沿 / USB 5V 插入
 *           上升沿，醒来刷新显示后继续睡。拨离充电位立即复位重新分派模式。
@@ -197,6 +200,12 @@ void charge_only_process(void)
         if(0 != USB_5V_PIN)
         {                                   // 充电中：5V 供电，轮询刷新显示
             exled |= bled_WIR;              // 充电档点亮 Wir
+            hi5_usb_init();                 // 连上电脑(已连上则直接返回), 供 USB 升级
+            if(true == busb_valid)
+            {                               // 枚举后处理上位机命令, ISP 命令在 usb_data_process() 里跳 boot
+                hid_process();
+                usb_data_process();
+            }
             led_hint_process();             // 电量%/充电图标/低电提示(lvd)
             flash_save_process();           // 充到的电量马上存, 拨走复位后才不显示旧电量
             disp_refresh();                 // 拔线灭屏后再插上时先发唤醒帧
@@ -207,6 +216,8 @@ void charge_only_process(void)
         else
         {                                   // 未插线：关屏，STOP1 等事件唤醒
             disp_off();                     // 54E 关屏帧(已灭屏则不重发)
+            usb_disconnect();               // 断开 USB, D+/D- 回下拉
+            busb_valid = false;
 
             mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
             drv_gpio_set_trig(OM_GPIO0, (1u<<MODE_BT_PIN)|(1u<<MODE_24G_PIN)|(1u<<iCHG_USB5V_PIN),
@@ -262,13 +273,13 @@ int main(void)
 // 不同个案，需要根据实际原理图设置初始化IO状态
     OM_PMU->PAD_PU_CTRL = 0xAAAAAA00;   
     OM_PMU->PAD_PU_CTRL_1 = 0x820AA800; 
-    OM_PMU->PAD_PD_CTRL = 0x00000000;   
+    OM_PMU->PAD_PD_CTRL = 0x0000000C;   
     OM_PMU->PAD_BUF_EN &= ~LVD_PIN_MASK;
     OM_PMU->PAD_BUF_EN |= (1<<MODE_BT_PIN | 1<<MODE_24G_PIN);
 
     OM_GPIO0->DATAOUT = 0xFFE1FFF1;   
-    OM_GPIO0->OUTENSET = 0x041A000F;  
-    OM_GPIO0->OUTENCLR = ~0x041A000F;
+    OM_GPIO0->OUTENSET = 0x041A0003;  
+    OM_GPIO0->OUTENCLR = ~0x041A0003;
 //------------------------------------------------------------------------------
     device_type = iDEVICE_TYPE_ERR;
 
