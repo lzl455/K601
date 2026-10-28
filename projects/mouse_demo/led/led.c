@@ -97,7 +97,7 @@ void disp_refresh(void)
     uint32_t rtc_temp;
 
     if((0 != USB_5V_PIN) && (0 == MODE_DATA))  // Wir 只在开关拨到中间且检测到 5V 时亮, 拨到两侧(蓝牙/2.4G)不亮
-        exled |= bled_WIR;                  // 每次刷新直接读脚: 2.4G 连上后 led_hint_process() 很少调用, 不能靠它
+        exled |= bled_WIR;                  // 每次刷新直接读脚, 不依赖各模式里 led_hint_process() 的调用时机
     else
         exled &= ~bled_WIR;
 
