@@ -254,6 +254,9 @@ static void ble_enter_sleep_level2(void)
     ms_sleep_level = MS_SLEEP_LEVEL2;
     disp_off();
     mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
+                                                // 没有连接也没有广播: 充电时不深睡, 也就没有射频中断喂狗,
+    drv_rtc_control(OM_RTC, RTC_CONTROL_ALARM0_INT_EN, NULL);   // 开 RTC 16ms 节拍(drv_rtc_isr_callback 的
+    drv_rtc_set_alarm0(drv_rtc_read(OM_RTC) + mMS_TO_TICK(16)); // LEVEL2 分支)喂狗, 否则 10s 后看门狗复位
 }
 
 /*********************************************************************
