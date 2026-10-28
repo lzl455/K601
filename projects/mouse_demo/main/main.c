@@ -283,6 +283,42 @@ int main(void)
 //------------------------------------------------------------------------------
     device_type = iDEVICE_TYPE_ERR;
 
+#if (1) // 调试用, 定位"休眠后约 10s 自己醒": 开机显示 2s, 十位=复位原因, 个位=深睡唤醒源
+        // 复位原因: 0 上电 1 看门狗 2 软复位 3 深睡唤醒 4 standby
+        // 唤醒源:   0 无 1 引脚 2 RTC 3 RTC tick 4 ALARM0 5 ALARM1 6 看门狗 7 VBUS
+    {
+        extern unsigned char const led_no_tbl[];
+        uint32_t wk = ((OM_PMU->WKINT_CLR & PMU_WKINT_CLR_ANY_WK_MASK) >> PMU_WKINT_CLR_WK_SRC_POS);
+        uint8_t rst = (OM_RCC->RSTCTRL & 0x07);
+        uint8_t src = 0, seg, i;
+
+        while(0 != wk)
+        {
+            src++;
+            if(wk & 0x01)
+                break;
+            wk >>= 1;
+        }
+        exled = 0;
+        seg = led_no_tbl[rst];
+        for(i=0; i<7; i++)
+            if(seg & (1<<i)) exled |= (bled_2_A>>i);    // 十位 A~G = bit21~15
+        seg = led_no_tbl[src];
+        for(i=0; i<7; i++)
+            if(seg & (1<<i)) exled |= (bled_3_A>>i);    // 个位 A~G = bit14~8
+        exled_ctrl = 0;
+        exLogo_send();                          // 唤醒帧
+        delayus(20000);
+        exLogo_send();
+        for(i=0; i<20; i++)
+        {
+            drv_wdt_keep_alive(OM_WDT);
+            delayus(100000);
+        }
+        exled = 0;
+    }
+#endif
+
                                                 // ???????????????????????
     OM_RCC->CLKGATE &= ~RCC_DEV_CLK_GATE_SWD_CLK_GATE_MASK; // disable jtag
     kb_led_status = 0;
