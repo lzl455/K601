@@ -85,136 +85,47 @@ __RAM_CODE void jump_to_boot(void)
 ******************************************************************************/
 void usb_data_process(void)
 {
-    unsigned char ControlReg;
     volatile uint8_t *fifo_epn;
+
+    // USB下不上报键盘/鼠标/多媒体数据，直接丢弃(不清掉的话多媒体键会一直等发送)
+    m_data_flag &= bhid_data_send;
 
     if(0==(usb_ctrl_flag&bep1_ep2_enable))
     {
         return;
     }
 
-    if(0==(m_data_flag&0x1F))
+    if(0==(m_data_flag&bhid_data_send))
         return;
 
 __disable_irq();
-    OM_USB->INDEX = 1;
-    if (OM_USB->TXCSR1 & USB_TXCSR_P_TXPKTRDY)
-    {
-        //USB_Write_Reg(M_REG_INCSR1, INCSR_SDSTL);
-    }
-    else if(g_USB_Ep_Status[1] == EP_IDLE)
-    {
-        if(m_data_flag&bstd_kb_data_send)
-        {
-            m_data_flag &= ~bstd_kb_data_send;
-            fifo_epn = (volatile uint8_t *)&OM_USB->EPnFIFO[1];
-
-            *fifo_epn = std_kb_data_modifier;
-            *fifo_epn = 0;
-            *fifo_epn = std_kb_data_key1;
-            *fifo_epn = std_kb_data_key2;
-            *fifo_epn = std_kb_data_key3;
-            *fifo_epn = std_kb_data_key4;
-            *fifo_epn = std_kb_data_key5;
-            *fifo_epn = std_kb_data_key6;
-
-            OM_USB->TXCSR1 |= USB_TXCSR_P_TXPKTRDY;
-            g_USB_Ep_Status[1] = EP_TX;
-        }
-    }
-
     OM_USB->INDEX = 3;
-    if (OM_USB->TXCSR1 & USB_TXCSR_P_TXPKTRDY)
+    if (0 == (OM_USB->TXCSR1 & USB_TXCSR_P_TXPKTRDY)
+        && (g_USB_Ep_Status[3] == EP_IDLE))
     {
-        //USB_Write_Reg(M_REG_INCSR1, INCSR_SDSTL);
-    }
-    else if(g_USB_Ep_Status[3] == EP_IDLE)
-    {
-        if(m_data_flag & bstd_ex_data_send)
+        m_data_flag &= ~bhid_data_send;
+
+        fifo_epn = (volatile uint8_t *)&OM_USB->EPnFIFO[3];
+
+        *fifo_epn = iREPORT_ID_CUSTOMER_DATA;
+        for(unsigned char i=1; i<32; i++)
+            *fifo_epn = in_report_data[i];
+
+        OM_USB->TXCSR1 |= USB_TXCSR_P_TXPKTRDY;
+        g_USB_Ep_Status[3] = EP_TX;
+
+        if(bjump_boot
+            &&(0x55 == out_report_data[2])
+            && (0xAA == out_report_data[3])
+            && (0x00 == out_report_data[4])
+            && (0xFF == out_report_data[5]))
         {
-            m_data_flag &= ~bstd_ex_data_send;
+            delayus(5000);
+            OM_RCC->USB_CTRL = 0;           // disconnect
+            delayus(200000);
 
-            fifo_epn = (volatile uint8_t *)&OM_USB->EPnFIFO[3];
-            *fifo_epn = iREPORT_ID_KB_KEY;
-            for(uint8_t i=0; i<15; i++)
-                *fifo_epn = std_key[i+7];
-
-            OM_USB->TXCSR1 |= USB_TXCSR_P_TXPKTRDY;
-            g_USB_Ep_Status[3] = EP_TX;
-        }
-        else if(m_data_flag & bmmk_data_send)
-        {
-            m_data_flag &= ~bmmk_data_send;
-
-            fifo_epn = (volatile uint8_t *)&OM_USB->EPnFIFO[3];
-            *fifo_epn = iREPORT_ID_MULTIM_KEY;
-            *fifo_epn = mmk_data_l;
-            *fifo_epn = mmk_data_h;
-
-            OM_USB->TXCSR1 |= USB_TXCSR_P_TXPKTRDY;
-            g_USB_Ep_Status[3] = EP_TX;
-        }
-        else if(m_data_flag & bhid_data_send)
-        {
-            m_data_flag &= ~bhid_data_send;
-
-            fifo_epn = (volatile uint8_t *)&OM_USB->EPnFIFO[3];
-
-            *fifo_epn = iREPORT_ID_CUSTOMER_DATA;
-            for(unsigned char i=1; i<32; i++)
-                *fifo_epn = in_report_data[i];
-
-            OM_USB->TXCSR1 |= USB_TXCSR_P_TXPKTRDY;
-            g_USB_Ep_Status[3] = EP_TX;
-
-            if(bjump_boot
-				&&(0x55 == out_report_data[2])
-                && (0xAA == out_report_data[3])
-                && (0x00 == out_report_data[4])
-                && (0xFF == out_report_data[5]))
-            {
-                delayus(5000);
-                OM_RCC->USB_CTRL = 0;           // disconnect
-		        delayus(200000);
-
-                OM_PMU->SW_RSVD7 = iAPP_INTO_BOOT;
-                jump_to_boot();
-            }
-        }
-        else if(m_data_flag&bmouse_data_send)
-        {
-            m_data_flag &= ~bmouse_data_send;
-            if(0 == (usb_ctrl_flag & bsleep_eable))
-            {
-                fifo_epn = (volatile uint8_t *)&OM_USB->EPnFIFO[3];
-                *fifo_epn = (mouse_data_key&0x1F);
-                *fifo_epn = (mouse_x&0xFF);
-                *fifo_epn = (mouse_y&0xFF);
-                *fifo_epn = mouse_data_z;
-
-                OM_USB->TXCSR1 |= USB_TXCSR_P_TXPKTRDY;
-                g_USB_Ep_Status[3] = EP_TX;
-
-                mouse_data_z = 0;
-            }
-            else
-            {
-                busb_mouse_in_en = false;
-                fifo_epn = (volatile uint8_t *)&OM_USB->EPnFIFO[3];
-
-                *fifo_epn = iREPORT_ID_MOUSE;
-                *fifo_epn = (mouse_data_key&0x1F);
-                *fifo_epn = (mouse_x&0xFF);
-                *fifo_epn = (((mouse_x>>8)&0x0f)|((mouse_y<<4)&0xf0));
-                *fifo_epn = ((mouse_y>>4)&0xFF);
-                *fifo_epn = mouse_data_z;
-                *fifo_epn = 0;
-
-                OM_USB->TXCSR1 |= USB_TXCSR_P_TXPKTRDY;
-                g_USB_Ep_Status[3] = EP_TX;
-
-                mouse_data_z = 0;
-            }
+            OM_PMU->SW_RSVD7 = iAPP_INTO_BOOT;
+            jump_to_boot();
         }
     }
 __enable_irq();
