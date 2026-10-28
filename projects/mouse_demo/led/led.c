@@ -45,10 +45,12 @@ extern bool                     b24g_nromal;
 * 功能描述:
 * 输入参数： 无
 * 输出参数： 无
-* 说    明:
+* 说    明: 图标有变化就强制刷新(exled_rtc_count=0), 马上上屏, 不等下一个 500ms
 *******************************************************************************/
 void device_led_on(void)
 {
+    uint32_t led_old = exled;
+
     exled &= ~(bled_24G|bled_BT1|bled_BT2);
 
     if(iDEVICE_TYPE_BT0 == device_type)
@@ -57,6 +59,9 @@ void device_led_on(void)
         exled |= bled_BT2;
     else if(iDEVICE_TYPE_24G == device_type)
         exled |= bled_24G;
+
+    if(led_old != exled)
+        exled_rtc_count = 0;
 }
 
 /*******************************************************************************
@@ -64,10 +69,13 @@ void device_led_on(void)
 * 功能描述:
 * 输入参数： 无
 * 输出参数： 无
-* 说    明:
+* 说    明: 同 device_led_on(), 图标有变化就强制刷新
 *******************************************************************************/
 void device_led_off(void)
 {
+    if(0 != (exled&(bled_24G|bled_BT1|bled_BT2)))
+        exled_rtc_count = 0;
+
     exled &= ~(bled_24G|bled_BT1|bled_BT2);
 }
 
@@ -90,7 +98,9 @@ void disp_off(void)
 * 函数名称: disp_refresh()
 * 功能描述: 54E 亮屏刷新, 每 500ms 发一帧 exled
 * 说    明: 灭屏后的第一帧只用来唤醒驱动板(唤醒沿上的数据可能收不全),
-*           20ms 后补发正式帧。调用间隔要小于 1s, 否则驱动板会再次休眠
+*           20ms 后补发正式帧。调用间隔要小于 1s, 否则驱动板会再次休眠。
+*           强制刷新(exled_rtc_count=0, 图标闪烁翻转等)后 20ms 再补发一帧:
+*           驱动板偶尔漏收一帧时, 这次变化不会拖到下一个 500ms 才上屏
 *******************************************************************************/
 void disp_refresh(void)
 {
@@ -107,7 +117,12 @@ void disp_refresh(void)
         exLogo_send();
         exled_rtc_count = rtc_temp - mMS_TO_TICK(480);
     }
-    else if((mMS_TO_TICK(500) < (rtc_temp-exled_rtc_count))||(0 == exled_rtc_count))
+    else if(0 == exled_rtc_count)
+    {
+        exled_rtc_count = rtc_temp - mMS_TO_TICK(480);
+        exLogo_send();
+    }
+    else if(mMS_TO_TICK(500) < (rtc_temp-exled_rtc_count))
     {
         exled_rtc_count = rtc_temp;
         exLogo_send();
@@ -121,7 +136,8 @@ extern void key_into_fcc_test(void);
 * 功能描述: 模式图标(BT1/BT2/2.4G)回连/对码闪烁
 * 输入参数:
 * 输出参数:
-* 说    明: 对码快闪(250ms); 未连接(回连/同步)慢闪(1s); 连上常亮。蓝牙和 2.4G 相同
+* 说    明: 对码快闪(250ms); 未连接(回连/同步)慢闪(1s); 连上常亮。蓝牙和 2.4G 相同。
+*           闪烁从亮开始, 第一拍也亮满一个周期; 亮灭一变, device_led_on/off() 马上强制刷新上屏
 ******************************************************************************/
 void device_led_process(void)
 {
@@ -134,6 +150,7 @@ void device_led_process(void)
             {
                 device_conn_index++;
                 led_delay_count = rtc_cur_value;
+                bdevice_led_status = true;      // 进闪烁前图标是亮的(开机/连接时常亮), 从亮开始
             }
             else if(1 == device_conn_index)
             {
@@ -150,7 +167,6 @@ void device_led_process(void)
                     device_led_off();
                     if(mMS_TO_TICK(250) < (rtc_cur_value - led_delay_count))
                     {
-                        exled_rtc_count=0;
                         bdevice_led_status = true;
                         led_delay_count = rtc_cur_value;
                     }
@@ -160,7 +176,6 @@ void device_led_process(void)
                     device_led_on();
                     if(mMS_TO_TICK(250) < (rtc_cur_value - led_delay_count))
                     {
-                        exled_rtc_count=0;
                         bdevice_led_status = false;
                         led_delay_count = rtc_cur_value;
                     }
@@ -182,6 +197,7 @@ void device_led_process(void)
             {
                 device_conn_index++;
                 led_delay_count = rtc_cur_value;
+                bdevice_led_status = true;      // 同对码: 从亮开始
             }
             else if(1 == device_conn_index)
             {
@@ -197,7 +213,6 @@ void device_led_process(void)
                     device_led_off();
                     if(mMS_TO_TICK(1000) < (rtc_cur_value - led_delay_count))
                     {
-                        exled_rtc_count=0;
                         bdevice_led_status = true;
                         led_delay_count = rtc_cur_value;
                     }
@@ -207,7 +222,6 @@ void device_led_process(void)
                     device_led_on();
                     if(mMS_TO_TICK(1000) < (rtc_cur_value - led_delay_count))
                     {
-                        exled_rtc_count=0;
                         bdevice_led_status = false;
                         led_delay_count = rtc_cur_value;
                     }
