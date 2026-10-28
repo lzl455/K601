@@ -272,8 +272,7 @@ int main(void)
 //------------------------------------------------------------------------------
     device_type = iDEVICE_TYPE_ERR;
 
-                                                // ???????????????????????
-    OM_RCC->CLKGATE &= ~RCC_DEV_CLK_GATE_SWD_CLK_GATE_MASK; // disable jtag
+    OM_RCC->CLKGATE |= RCC_DEV_CLK_GATE_SWD_CLK_GATE_MASK; // 开启 SWD 调试
     kb_led_status = 0;
     mouse_periph_wakeup_enable(WAKEUP_ALL_DISABLE);
     if(RCC_RST_TYPE_DEEP_SLEEP == (OM_RCC->RSTCTRL & 0x07))
@@ -327,12 +326,8 @@ int main(void)
     if((RCC_RST_TYPE_POWER_ON == (OM_RCC->RSTCTRL & 0x07))
         || (iSCRATCH_BOOT_POWER == OM_PMU->SW_RSVD7))
     { // 上电进入
-        OM_RCC->CLKGATE |= RCC_DEV_CLK_GATE_SWD_CLK_GATE_MASK; // 上电留 50ms SWD 窗口供烧录
-        delayus(50000);
-
         sys_ctrl = 0;
         OM_PMU->SW_RSVD7 = 0;
-        OM_RCC->CLKGATE &= ~RCC_DEV_CLK_GATE_SWD_CLK_GATE_MASK; // disable jtag
 
         //OM_PMU->SW_RSVD1 = 0;
         OM_PMU->SW_RSVD1 = (device_type&PMU_SW_RSVD1_RF_MDOE_MASK);
