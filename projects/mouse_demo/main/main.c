@@ -287,8 +287,7 @@ int main(void)
     OM_RCC->CLKGATE &= ~RCC_DEV_CLK_GATE_SWD_CLK_GATE_MASK; // disable jtag
     kb_led_status = 0;
     mouse_periph_wakeup_enable(WAKEUP_ALL_DISABLE);
-    if(RCC_RST_TYPE_DEEP_SLEEP == (OM_RCC->RSTCTRL & 0x07))
-    {
+    {                                           // 低压关机后醒来: 只看标志。深睡唤醒若经 bootloader 软复位进来, RSTCTRL 就不是深睡了
         if(OM_PMU->SW_RSVD1 & PMU_SW_RSVD1_POWER_OFF)
         {                                       // 低压关机
             while(1)
