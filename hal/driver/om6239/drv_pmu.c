@@ -157,7 +157,7 @@ __RAM_CODE void drv_pmu_set_low_power_mode(pmu_lpm_t lpm)
                 OM_PMU->LPMS = (lpms & (~PMU_LPMS_LOW_PWR_MODE_EN_MASK)) | (uint32_t)lpm;
                 if (lpm == PMU_LPM_DEEP_SLEEP) {
                     OM_PMU->PAD_PU_CTRL = 0xAAAAAA00;       // P04~P13 行(唤醒源)、P14~P17 150K 上拉
-                    OM_PMU->PAD_PU_CTRL_1 = 0x02000000;     // 只留 P34(CHR_OK) 150K 上拉; P20/P36 模式开关、P37 无上下拉
+                    OM_PMU->PAD_PU_CTRL_1 = 0x82000000;     // 只留 P34(CHR_OK)、P37(BOOT) 150K 上拉(P37 悬空深睡会自己醒); P20/P36 模式开关无上下拉
                     OM_PMU->PAD_PD_CTRL = 0x0000000C;       // 只有 P02/P03(USB D-/D+) 下拉
                     OM_PMU->PAD_BUF_EN &= ~(1<<MODE_BT_PIN | 1<<MODE_24G_PIN);  // 模式开关输入缓冲关闭, 深睡不读
 

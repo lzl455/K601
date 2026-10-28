@@ -134,7 +134,8 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         mDECO_LED_OFF;                      // 进入休眠: 装饰灯灭
         MATRX_ALL_LOW;
         KEY_EX_LOW;
-        OM_PMU->PAD_PU_CTRL_1 = 0x02000000;  // 睡眠只留 P34(CHR_OK) 150K 上拉; P20/P36 模式开关、P37 无上下拉
+        OM_PMU->PAD_PU_CTRL_1 = 0x82000000;  // 睡眠只留 P34(CHR_OK)、P37(BOOT) 150K 上拉; P20/P36 模式开关无上下拉
+                                            // (P37 悬空会让深睡反复自己醒, 睡眠时必须上拉)
 
         drv_gpio_set_trig(OM_GPIO0, (1<<KEY_R0_PIN)|(1<<KEY_R1_PIN)|(1<<KEY_R2_PIN)|(1<<KEY_R3_PIN)| \
                                     (1<<KEY_R4_PIN)|(1<<KEY_R5_PIN)|(1<<KEY_R6_PIN)|(1<<KEY_R7_PIN), \
