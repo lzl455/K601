@@ -200,7 +200,6 @@ void charge_only_process(void)
 
         if(0 != USB_5V_PIN)
         {                                   // 充电中：5V 供电，轮询刷新显示
-            exled |= bled_WIR;              // 充电档点亮 Wir
             hi5_usb_init();                 // 连上电脑(已连上则直接返回), 供 USB 升级
             if(true == busb_valid)
             {                               // 枚举后处理上位机命令, ISP 命令在 usb_data_process() 里跳 boot

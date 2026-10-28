@@ -403,6 +403,10 @@ void led_hint_process(void)
 
     rtc_cur_value = drv_rtc_read(OM_RTC);
     bat_check();
+    if(0 != (bat_status&bcharging))
+        exled |= bled_WIR;                      // 检测到 5V: Wir 亮(蓝牙/2.4G 都是)
+    else
+        exled &= ~bled_WIR;
     if(0 != (bat_status&blvd_power_on))
         return;
 
