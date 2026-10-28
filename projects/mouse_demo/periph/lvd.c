@@ -43,6 +43,8 @@ POFCON bit(0):低电压指示标志位，低于门限值时为低电平，否则
 
 #define	mPOF_WARM_READ     		(OM_POF->POFCON & 0x01)
 
+#define iBAT_POWER_KEEP_MAGIC   0x5AC0B001  // 写在 PMU 保持寄存器 SW_RSVD3, 断电才清零
+
 //-----------------------------------------------------------------------------;
 // 变量定义区
 //
@@ -218,8 +220,9 @@ void bat_init(void)
 {
     bat_status |= blvd_power_on;
     charge_time_count = 0;
-    bbat_cold_boot = ((RCC_RST_TYPE_POWER_ON == (OM_RCC->RSTCTRL & 0x07))   // 与 main() 判断"上电进入"相同:
-                      || (iSCRATCH_BOOT_POWER == OM_PMU->SW_RSVD7));        // 上电时 bootloader 先软复位再跳进 app
+                                                // 拨开关开机(真断过电)才算: PMU 保持寄存器断电才清零。不能看 RSTCTRL/SW_RSVD7,
+    bbat_cold_boot = (iBAT_POWER_KEEP_MAGIC != OM_PMU->SW_RSVD3);   // bootloader 对上电和非上电复位都是软复位再跳进 app, 分不出来
+    OM_PMU->SW_RSVD3 = iBAT_POWER_KEEP_MAGIC;
 }
 
 /******************************************************************************
