@@ -584,8 +584,8 @@ static void usb_get_descriptor(void)
         case HID_HID_DESCRIPTOR_TYPE:
             if(0 == LSB(usbrx0fifo[4]))
             {
-                g_USB_DataPtr = (uint8_t*)DeviceHidDescriptor_KB;
-                usb_data_size_min(sizeof(DeviceHidDescriptor_KB));
+                g_USB_DataPtr = (uint8_t*)DeviceHidDescriptor_IF0;
+                usb_data_size_min(sizeof(DeviceHidDescriptor_IF0));
                 packetizer_isr_ep0_in();
             }
             else if(1 == LSB(usbrx0fifo[4]))
@@ -598,8 +598,8 @@ static void usb_get_descriptor(void)
         case  DSCR_TYPE_HID_REPORT:
             if(0 == LSB(usbrx0fifo[4]))
             {
-                g_USB_DataPtr = (uint8_t*)HID_ReportDescriptor_Keyboard_6key;
-                usb_data_size_min(sizeof(HID_ReportDescriptor_Keyboard_6key));
+                g_USB_DataPtr = (uint8_t*)HID_ReportDescriptor_IF0;
+                usb_data_size_min(sizeof(HID_ReportDescriptor_IF0));
                 packetizer_isr_ep0_in();
             }
             else if(1 == LSB(usbrx0fifo[4]))
@@ -760,8 +760,8 @@ static void __attribute__((noinline)) usb_setup_process(void)
                 case HID_HID_DESCRIPTOR_TYPE:
                     if(0 == LSB(usbrx0fifo[4]))
                     {
-                        g_USB_DataPtr = (uint8_t*)DeviceHidDescriptor_KB;
-                        usb_data_size_min(sizeof(DeviceHidDescriptor_KB));
+                        g_USB_DataPtr = (uint8_t*)DeviceHidDescriptor_IF0;
+                        usb_data_size_min(sizeof(DeviceHidDescriptor_IF0));
                         packetizer_isr_ep0_in();
                     }
                     else if(1 == LSB(usbrx0fifo[4]))
@@ -774,8 +774,8 @@ static void __attribute__((noinline)) usb_setup_process(void)
                 case  DSCR_TYPE_HID_REPORT:
                     if(0 == LSB(usbrx0fifo[4]))
                     {
-                        g_USB_DataPtr = (uint8_t*)HID_ReportDescriptor_Keyboard_6key;
-                        usb_data_size_min(sizeof(HID_ReportDescriptor_Keyboard_6key));
+                        g_USB_DataPtr = (uint8_t*)HID_ReportDescriptor_IF0;
+                        usb_data_size_min(sizeof(HID_ReportDescriptor_IF0));
                         packetizer_isr_ep0_in();
                     }
                     else if(1 == LSB(usbrx0fifo[4]))

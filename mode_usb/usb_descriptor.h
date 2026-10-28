@@ -490,69 +490,6 @@ unsigned char const StringDescSerialNum[] =
 };
 
 unsigned char const HID_ReportDescriptor_Define[] = {
-//MOUSE REPORT
-    HID_UsagePage(HID_USAGE_PAGE_GENERIC),
-    HID_Usage(HID_USAGE_GENERIC_MOUSE),
-    HID_Collection(HID_Application),
-      HID_ReportID(iREPORT_ID_MOUSE),
-      HID_Usage(HID_USAGE_GENERIC_POINTER),
-      HID_Collection(HID_Physical),
-        HID_UsagePage(HID_USAGE_PAGE_BUTTON),
-        HID_UsageMin(1),
-        HID_UsageMax(8),
-        HID_LogicalMin(0),
-        HID_LogicalMax(1),
-        HID_ReportCount(8),
-        HID_ReportSize(1),
-        HID_Input(HID_Data | HID_Variable | HID_Absolute),
-        HID_UsagePage(HID_USAGE_PAGE_GENERIC),
-        HID_Usage(HID_USAGE_GENERIC_X),
-        HID_Usage(HID_USAGE_GENERIC_Y),
-        HID_LogicalMinS(0xF801),                //HID_LogicalMinS(-2047)
-        HID_LogicalMaxS(0x07FF),                //HID_LogicalMaxS(2047)
-        HID_ReportSize(12),
-        HID_ReportCount(2),
-        HID_Input(HID_Data | HID_Variable | HID_Relative),
-        HID_Usage(HID_USAGE_GENERIC_WHEEL),
-        HID_LogicalMin(0x81),                   //HID_LogicalMin(-127)
-        HID_LogicalMax(0x7F),                   //HID_LogicalMax(127)
-        HID_ReportSize(8),
-        HID_ReportCount(1),
-        HID_Input(HID_Data | HID_Variable | HID_Relative),
-        HID_UsagePage(HID_USAGE_PAGE_CONSUMER),
-        HID_UsageS(0x0238),
-        HID_ReportCount(1),
-        HID_Input(HID_Data | HID_Variable | HID_Relative),
-      HID_EndCollection,
-    HID_EndCollection,
-//KEYBOARD_DATA//25byte
-    HID_UsagePage(HID_USAGE_PAGE_GENERIC),      //2byte
-    HID_Usage(HID_USAGE_GENERIC_KEYBOARD),      //2byte
-    HID_Collection(HID_Application),            //2byte
-      HID_ReportID(iREPORT_ID_KB_KEY),          //2byte
-      HID_UsagePage(HID_USAGE_PAGE_KEYBOARD),   //2byte
-	  HID_LogicalMin(0),						//2byte
-	  HID_LogicalMax(1),						//2byte
-	  HID_UsageMin(0x00),					    //2byte
-	  HID_UsageMax(0x77),					    //2byte
-	  HID_ReportCount(0x78),					//2byte(96bit,12byte)
-	  HID_ReportSize(1),						//2byte
-	  HID_Input(HID_Data | HID_Variable | HID_Absolute),//2byte
-    HID_EndCollection,                          //1byte
-
-//MULTIM KEY REPORT//25byte
-    HID_UsagePage(HID_USAGE_PAGE_CONSUMER),
-    HID_Usage(HID_USAGE_CONSUMER_CONTROL),
-    HID_Collection(HID_Application),
-      HID_ReportID(iREPORT_ID_MULTIM_KEY),
-      HID_UsageMin(1),
-      HID_UsageMaxS(0x03FF),
-      HID_LogicalMin(1),
-      HID_LogicalMaxS(0x03FF),
-      HID_ReportCount(1),
-      HID_ReportSize(16),
-      HID_Input(HID_Data | HID_Array),
-    HID_EndCollection,
 //HID REPORT//25byte
     HID_UsagePageVendor(0x0F),                //3byte
     HID_Usage(0x01),						  //2byte
@@ -573,43 +510,20 @@ unsigned char const HID_ReportDescriptor_Define[] = {
     HID_EndCollection						  //1byte
 };
 
-//HID Report Descriptor
-unsigned char const HID_ReportDescriptor_Keyboard_6key[] = {
-    HID_UsagePage(HID_USAGE_PAGE_GENERIC),      //2byte
-    HID_Usage(HID_USAGE_GENERIC_KEYBOARD),      //2byte
-    HID_Collection(HID_Application),            //2byte
-      HID_UsagePage(HID_USAGE_PAGE_LED),        //2byte
-      HID_UsageMin(0x01),                       //2byte
-      HID_UsageMax(0x05),                       //2byte
-      HID_LogicalMin(0),                        //2byte
-      HID_LogicalMax(1),                        //2byte
-      HID_ReportCount(5),                       //2byte
-      HID_ReportSize(1),                        //2byte
-      HID_Output(HID_Data | HID_Variable | HID_Absolute),//2byte
-      HID_ReportCount(1),                       //2byte
-      HID_ReportSize(3),                        //2byte
-      HID_Output(HID_Constant),                 //2byte
-      HID_UsagePage(HID_USAGE_PAGE_KEYBOARD),   //2byte
-      HID_UsageMinS(0xE0),                      //3byte
-      HID_UsageMaxS(0xE7),                      //3byte
-      HID_LogicalMin(0),                        //2byte
-      HID_LogicalMax(1),                        //2byte
-      HID_ReportCount(8),                       //2byte
-      HID_ReportSize(1),                        //2byte
-      HID_Input(HID_Data | HID_Variable | HID_Absolute),//2byte
-      HID_ReportCount(1),                       //2byte
-      HID_ReportSize(8),                        //2byte
-      HID_Input(HID_Constant),                  //2byte
-      HID_UsageMin(0),                          //2byte
-      HID_UsageMaxS(0xFF),                      //3byte
-      HID_LogicalMin(0),                        //2byte
-      HID_LogicalMaxS(0xFF),                    //3byte
-      HID_ReportCount(6),                       //2byte
-      HID_Input(HID_Data | HID_Array),          //2byte
-    HID_EndCollection                           //1byte
+// 接口0占位: 厂商自定义页, 不是键盘, 从不上报数据; 只为让升级接口保持接口号1(MI_01)
+unsigned char const HID_ReportDescriptor_IF0[] = {
+    HID_UsagePageVendor(0x00),
+    HID_Usage(0x01),
+    HID_Collection(HID_Application),
+      HID_LogicalMin(0),
+      HID_LogicalMaxS(0xFF),
+      HID_ReportSize(8),
+      HID_ReportCount(8),
+      HID_Input(HID_Data | HID_Variable | HID_Absolute),
+    HID_EndCollection
 };
 
-#define REPORT0_SIZE			sizeof(HID_ReportDescriptor_Keyboard_6key)
+#define REPORT0_SIZE			sizeof(HID_ReportDescriptor_IF0)
 #define REPORT1_SIZE			sizeof(HID_ReportDescriptor_Define)
 
 //-----------------------------------------------------------------------------
@@ -643,15 +557,15 @@ unsigned char const g_usb_conf_desc[] = {
 //CONFIGURATION(9 bytes)
     USB_CONFIGUARTION_DESC_SIZE,                //bLength,9bytes.
     USB_CONFIGURATION_DESCRIPTOR_TYPE,          //Descriptor type,0x02(配置描述符)
-    WORD(59),                                   //描述符总长度,59+25
-    0x02,                                       //bNumInterface,0x02(接口数目)
+    WORD(59),                                   //描述符总长度,9+(9+9+7)*2
+    0x02,                                       //bNumInterface,接口0占位,接口1为升级用的自定义HID
     0x01,                                       //bConfigurationValue
     0x00,                                       //iConfiguration
-    0xA0,                                       //bmAttributes,(USB_CONFIG_BUS_POWERED|USB_CONFIG_REMOTE_WAKEUP)
+    0x80,                                       //bmAttributes,USB_CONFIG_BUS_POWERED(去掉远程唤醒)
     USB_CONFIG_POWER_MA(500),                   //bMaxPower,100mA
 
 //----------------------------------------------
-//Keyboard CONFIGURATION
+//Placeholder CONFIGURATION(接口0占位)
 //INTERFACE(9 bytes)
     USB_INTERFACE_DESC_SIZE,                    //bLength,9bytes
     USB_INTERFACE_DESCRIPTOR_TYPE,              //Descriptor type,0x04(接口描述符)
@@ -659,8 +573,8 @@ unsigned char const g_usb_conf_desc[] = {
     0x00,                                       //bAlternateSetting
     0x01,                                       //bNumEndpoints,0x01(端点数目)
     USB_DEVICE_CLASS_HUMAN_INTERFACE,           //bInterfaceClass,接口群组,USB规定HID码为0x03
-    HID_SUBCLASS_BOOT,                          //bInterfaceSubClass,接口次群组,为0x01
-    HID_PROTOCOL_KEYBOARD,                      //bInterfaceProtocol
+    HID_SUBCLASS_NONE,                          //bInterfaceSubClass,非boot设备
+    HID_PROTOCOL_NONE,                          //bInterfaceProtocol
     0x00,                                       //iInterface,接口字符串描述符的索引
 
 //HID(9 bytes)
@@ -678,7 +592,7 @@ unsigned char const g_usb_conf_desc[] = {
     USB_ENDPOINT_IN(1),                         //bEndpointAddress
     USB_ENDPOINT_TYPE_INTERRUPT,                //bmAttributes,传输的特性(中断传输)
     WORD(8),                                    //wMaxPacketSize,0x08(最大封包)
-    0x01,                                       //bInterval,轮询时间(1ms/unit)..
+    0x0A,                                       //bInterval,轮询时间(1ms/unit),不发数据,放慢轮询
 //----------------------------------------------
 //HID_Define CONFIGURATION
 //INTERFACE(9 bytes)																				//20130826
@@ -710,7 +624,7 @@ unsigned char const g_usb_conf_desc[] = {
     0x01,                                       //bInterval,轮询时间(1ms/unit)..
 };
 
-unsigned char const DeviceHidDescriptor_KB[]={
+unsigned char const DeviceHidDescriptor_IF0[]={
     HID_DESC_SIZE,                              //bLength,9bytes
     HID_HID_DESCRIPTOR_TYPE,                    //Descriptor type,0x21(HID描述符)
     WORD(HID_VERSION),                          //bcdHID
