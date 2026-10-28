@@ -267,8 +267,8 @@ int main(void)
     OM_PMU->PAD_BUF_EN |= (1<<MODE_BT_PIN | 1<<MODE_24G_PIN);
 
     OM_GPIO0->DATAOUT = 0xFFE1FFF1;   
-    OM_GPIO0->OUTENSET = 0x041E000F;  
-    OM_GPIO0->OUTENCLR = ~0x041E000F;
+    OM_GPIO0->OUTENSET = 0x041A000F;  
+    OM_GPIO0->OUTENCLR = ~0x041A000F;
 //------------------------------------------------------------------------------
     device_type = iDEVICE_TYPE_ERR;
 
