@@ -96,6 +96,11 @@ void disp_refresh(void)
 {
     uint32_t rtc_temp;
 
+    if(0 != USB_5V_PIN)                     // 检测到 5V: Wir 亮。每次刷新直接读脚, 2.4G 连上后
+        exled |= bled_WIR;                  // led_hint_process() 只在接收器下发数据后才调, 不能靠它
+    else
+        exled &= ~bled_WIR;
+
     rtc_temp = drv_rtc_read(OM_RTC);
     if(true == bdisp_off)
     {
