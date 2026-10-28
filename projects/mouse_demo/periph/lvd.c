@@ -54,6 +54,7 @@ bool                            bkey_bat_update;
 bool                            bbat_update;
 bool                            bbat_check_scan;    // 上电用了存储电量, 待约 1s 后用实测值校一次
 bool                            bcharging_bak;      // 上次的充电状态, 插拔时清零 bat_power_delay
+bool                            bbat_cold_boot;     // 上电复位(拨开关开机), 不是深睡唤醒
 
 uint8_t                         lvd_scan_count;
 uint16_t                        bat_power_delay;
@@ -217,6 +218,7 @@ void bat_init(void)
 {
     bat_status |= blvd_power_on;
     charge_time_count = 0;
+    bbat_cold_boot = (RCC_RST_TYPE_POWER_ON == (OM_RCC->RSTCTRL & 0x07));
 }
 
 /******************************************************************************
@@ -294,8 +296,11 @@ __RAM_CODE void bat_check(void)
     if((true == bbat_check_scan)&&(1000 <= sys_tick_count))
     {                                           // 上电校准: 不充电时实测与存储值差 2 档及以上, 说明存储值已过期
         bbat_check_scan = false;                // (如关机后单独充过电、换过电池), 改用实测值;
-        if((0 == (bat_status&bcharging))        // 差 1 档以内保留存储值, 免得每次唤醒在两档之间跳
-            &&((bat_dat >= lvd_value+2)||(lvd_value >= bat_dat+2)))
+        uint8_t check_gap = 2;                  // 差 1 档以内保留存储值, 免得每次唤醒在两档之间跳
+        if(true == bbat_cold_boot)              // 拨开关开机: 中间档芯片断电但仍在充电, 差 1 档也改用实测值
+            check_gap = 1;
+        if((0 == (bat_status&bcharging))
+            &&((bat_dat >= lvd_value+check_gap)||(lvd_value >= bat_dat+check_gap)))
         {
             lvd_value = bat_dat;
             bat_status &= 0xE0;
