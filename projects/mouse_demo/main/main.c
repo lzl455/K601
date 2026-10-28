@@ -177,14 +177,42 @@ void mouse_periph_wakeup_enable(uint8_t mask)
 * 输出参数: 无
 * 说    明: 插线时连上 USB，只处理上位机命令(升级等)，不扫键、不发按键；
 *           充电由硬件 5V 直充，与协议栈无关。
-*           插线时由 5V 供电，轮询刷新 54E 充电/电量显示；未插线时发关屏
-*           帧后 STOP1，唤醒源 = 按键 / 模式开关两脚上升沿 / USB 5V 插入
-*           上升沿，醒来刷新显示后继续睡。拨离充电位立即复位重新分派模式。
+*           插线时由 5V 供电，轮询刷新 54E 充电/电量显示；充满后再亮 4s 灭屏:
+*           只接充电器时断开 USB 进 STOP1，接着电脑时只灭屏、USB 保持可升级；
+*           按键亮屏 4s。未插线时发关屏帧后 STOP1，唤醒源 = 按键 / 模式开关
+*           两脚上升沿 / USB 5V 插入上升沿。拨离充电位立即复位重新分派模式。
 ******************************************************************************/
 #define iCHG_USB5V_PIN         (3*8+5)         // USB 5V 检测脚，同 USB_5V_PIN
+#define iCHG_FULL_SHOW_COUNT   200             // 充满后/按键后亮屏时间, 单位 20ms(4s)
+
+static void charge_only_sleep(void)
+{                                           // 关屏、断开 USB, STOP1 等按键/模式开关/USB 5V 插入唤醒
+    disp_off();                             // 54E 关屏帧(已灭屏则不重发)
+    usb_disconnect();                       // 断开 USB, D+/D- 回下拉
+    busb_valid = false;
+
+    mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
+    drv_gpio_set_trig(OM_GPIO0, (1u<<MODE_BT_PIN)|(1u<<MODE_24G_PIN)|(1u<<iCHG_USB5V_PIN),
+                      GPIO_TRIG_RISING_EDGE);
+    drv_pmu_wakeup_pin_set(MODE_BT_PIN, PMU_PIN_WAKEUP_TYPE_RISE);
+    drv_pmu_wakeup_pin_set(MODE_24G_PIN, PMU_PIN_WAKEUP_TYPE_RISE);
+    drv_pmu_wakeup_pin_set(iCHG_USB5V_PIN, PMU_PIN_WAKEUP_TYPE_RISE);
+    NVIC_ClearPendingIRQ(WAKEUP_GPIO0_IRQn);
+    NVIC_SetPriority(WAKEUP_GPIO0_IRQn, RTE_GPIO0_IRQ_PRIORITY);
+    NVIC_EnableIRQ(WAKEUP_GPIO0_IRQn);
+
+    drv_pmu_set_low_power_mode(PMU_LPM_STOP1);
+
+    OM_CRITICAL_BEGIN();                    // 醒来：清唤醒标志(插线后由 disp_refresh() 唤醒 54E)
+    drv_pmu_clear_wakeup();
+    OM_CRITICAL_END();
+    exled_rtc_count = 0;
+}
 
 void charge_only_process(void)
 {
+    uint8_t full_show_count = iCHG_FULL_SHOW_COUNT;
+
     rtc_init();                             // 主循环的 rtc_init() 在充电档之后才执行, 这里先开 RTC 计数(drv_rtc_read 等 CNT_VALID)
     device_led_off();                       // 无线模式灯不亮
     exled_rtc_count = 0;
@@ -208,33 +236,38 @@ void charge_only_process(void)
             }
             led_hint_process();             // 电量%/充电图标/低电提示(lvd)
             flash_save_process();           // 充到的电量马上存, 拨走复位后才不显示旧电量
-            disp_refresh();                 // 拔线灭屏后再插上时先发唤醒帧
+
+            if(0 == (bat_status&bcharge_ok))
+                full_show_count = iCHG_FULL_SHOW_COUNT; // 充电中一直亮屏, 充满后再亮 4s
+            else if(true == bperiph_int)
+            {                               // 充满灭屏后按键(或插线唤醒): 再亮 4s
+                bperiph_int = false;
+                full_show_count = iCHG_FULL_SHOW_COUNT;
+            }
+
+            if(0 != full_show_count)
+            {
+                if(0 != (bat_status&bcharge_ok))
+                    full_show_count--;
+                disp_refresh();             // 拔线灭屏后再插上时先发唤醒帧
+            }
+            else if(false == busb_valid)
+            {                               // 充满且只接充电器: 灭屏、断开 USB 进 STOP1
+                charge_only_sleep();
+                continue;
+            }
+            else if(false == bdisp_off)
+            {                               // 充满但接着电脑: 只灭屏, USB 保持可升级; 打开按键中断, 按键再亮屏
+                disp_off();
+                mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
+            }
 
             delayus(20000);
             sys_tick_count += 20;           // 充电档没有 RTC 节拍, 手动计时, 供 bat_check() 上电稳定等待
         }
         else
         {                                   // 未插线：关屏，STOP1 等事件唤醒
-            disp_off();                     // 54E 关屏帧(已灭屏则不重发)
-            usb_disconnect();               // 断开 USB, D+/D- 回下拉
-            busb_valid = false;
-
-            mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
-            drv_gpio_set_trig(OM_GPIO0, (1u<<MODE_BT_PIN)|(1u<<MODE_24G_PIN)|(1u<<iCHG_USB5V_PIN),
-                              GPIO_TRIG_RISING_EDGE);
-            drv_pmu_wakeup_pin_set(MODE_BT_PIN, PMU_PIN_WAKEUP_TYPE_RISE);
-            drv_pmu_wakeup_pin_set(MODE_24G_PIN, PMU_PIN_WAKEUP_TYPE_RISE);
-            drv_pmu_wakeup_pin_set(iCHG_USB5V_PIN, PMU_PIN_WAKEUP_TYPE_RISE);
-            NVIC_ClearPendingIRQ(WAKEUP_GPIO0_IRQn);
-            NVIC_SetPriority(WAKEUP_GPIO0_IRQn, RTE_GPIO0_IRQ_PRIORITY);
-            NVIC_EnableIRQ(WAKEUP_GPIO0_IRQn);
-
-            drv_pmu_set_low_power_mode(PMU_LPM_STOP1);
-
-            OM_CRITICAL_BEGIN();            // 醒来：清唤醒标志(插线后由 disp_refresh() 唤醒 54E)
-            drv_pmu_clear_wakeup();
-            OM_CRITICAL_END();
-            exled_rtc_count = 0;
+            charge_only_sleep();
         }
     }
 }
