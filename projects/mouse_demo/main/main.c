@@ -185,6 +185,7 @@ void mouse_periph_wakeup_enable(uint8_t mask)
 
 void charge_only_process(void)
 {
+    rtc_init();                             // 主循环的 rtc_init() 在充电档之后才执行, 这里先开 RTC 计数(drv_rtc_read 等 CNT_VALID)
     device_led_off();                       // 无线模式灯不亮
     exled_rtc_count = 0;
 
