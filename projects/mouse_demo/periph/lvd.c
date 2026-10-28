@@ -218,7 +218,8 @@ void bat_init(void)
 {
     bat_status |= blvd_power_on;
     charge_time_count = 0;
-    bbat_cold_boot = (RCC_RST_TYPE_POWER_ON == (OM_RCC->RSTCTRL & 0x07));
+    bbat_cold_boot = ((RCC_RST_TYPE_POWER_ON == (OM_RCC->RSTCTRL & 0x07))   // 与 main() 判断"上电进入"相同:
+                      || (iSCRATCH_BOOT_POWER == OM_PMU->SW_RSVD7));        // 上电时 bootloader 先软复位再跳进 app
 }
 
 /******************************************************************************
