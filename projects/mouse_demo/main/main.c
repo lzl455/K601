@@ -315,6 +315,26 @@ int main(void)
             drv_wdt_keep_alive(OM_WDT);
             delayus(100000);
         }
+                                                // 第二屏(带 %): 十位 = 上次休眠的标记 0 没到深睡 1 进了深睡 2 深睡没进去
+                                                //               个位 = 1 经 bootloader 跳进来(SW_RSVD7 = iSCRATCH_BOOT_POWER)
+        rst = (iSCRATCH_BOOT_POWER == OM_PMU->SW_RSVD7) ? 1 : 0;
+        src = 0;
+        if(0xD5000000 == (OM_PMU->SW_RSVD3 & 0xFFFFFF00))
+            src = (OM_PMU->SW_RSVD3 & 0x0F);
+        OM_PMU->SW_RSVD3 = 0;
+        exled = bled_PERCENT;
+        seg = led_no_tbl[src];
+        for(i=0; i<7; i++)
+            if(seg & (1<<i)) exled |= (bled_2_A>>i);
+        seg = led_no_tbl[rst];
+        for(i=0; i<7; i++)
+            if(seg & (1<<i)) exled |= (bled_3_A>>i);
+        exLogo_send();
+        for(i=0; i<20; i++)
+        {
+            drv_wdt_keep_alive(OM_WDT);
+            delayus(100000);
+        }
         exled = 0;
     }
 #endif

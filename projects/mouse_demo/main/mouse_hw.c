@@ -105,7 +105,9 @@ pmu_lpm_t pm_checker_callback(void)
             disp_off();                         // 进 LEVEL2 时已灭屏, 这里只是兜底
 
             mouse_periph_wakeup_enable(WAKEUP_SLEEP_LEVEL2);
+            OM_PMU->SW_RSVD3 = 0xD5000001;      // 调试: 1 = 已进入深睡
             drv_pmu_set_low_power_mode(PMU_LPM_DEEP_SLEEP);
+            OM_PMU->SW_RSVD3 = 0xD5000002;      // 调试: 2 = 深睡没进去(WFI 直接返回), 卡在下面等看门狗
             while(1);        
         }
         else
