@@ -2,19 +2,10 @@
 * Copyright (c) 2013, SHENZHEN SEMITEK Co.,LTD.
 * All rights reserved.
 *
-* 文件名称: led.c
+* 文件名称: lvd.c
 *
-* 功能说明:
-* 修改说明:
-POFCON bit(7~4):低电压门限值设置位。
-				0000:0.8v			0001:0.9v			0010:1.0v
-				0011:1.1v			0100:1.2v			0101:1.4v
-				0110:1.7v			0111:1.8v			1000:1.9v
-				1001:2.0v			1010:2.1v			1011:2.2v
-				1100:2.4v			1101:2.7v
-POFCON bit(3):POF使能位，1为使能，0为不使能。
-POFCON bit(2~1):LVD检测脚设置。00对应P00，01对应P05，10对应P07，11对应P13。
-POFCON bit(0):低电压指示标志位，低于门限值时为低电平，否则为高电平。
+* 功能说明: 电池电量检测与显示(54E 电量数字、电池图标、低压关机)
+* 修改说明: 电池电压经 P33 分压后接 POF 比较器, bat_voltage_check() 逐档比较得到电压档位
 *******************************************************************************/
 #include "om_driver.h"
 #include "main.h"
@@ -55,8 +46,11 @@ POFCON bit(0):低电压指示标志位，低于门限值时为低电平，否则
 uint8_t                         bat_status;
 uint8_t                         lvd_value;          // lvd检测值
 uint8_t                         bat_value;          // 百分比值
+uint8_t                         lvd_empty_value;    // 0% 档(A2 0x03, A3 0x07); 这三个档和百分比表由 bat_init() 按芯片版本定
+uint8_t                         lvd_charge_max;     // 充电中最高到这一档(A2 80%, A3 90%), 充满信号来了才到 100%
+uint8_t                         lvd_full_value;     // 100% 档(A2 0x0A, A3 0x13)
+unsigned char const             *bat_pct_tbl;       // 电压档 -> 百分比
 
-bool                            bkey_bat_update;
 bool                            bbat_update;
 bool                            bbat_check_scan;    // 上电用了存储电量, 待约 1s 后用实测值校一次
 bool                            bcharging_bak;      // 上次的充电状态, 插拔时清零 bat_power_delay
@@ -66,12 +60,10 @@ uint32_t                        bat_power_delay;    // 读数偏离当前档的�
 uint32_t                        bat_hold_delay;     // 拔线后暂不降档的剩余时间(RTC tick)
 uint32_t                        bat_full_delay;     // 充电中 CHR_OK 持续为高的时间(RTC tick)
 uint32_t                        bat_check_rtc;      // 上次累计时的 RTC
-uint16_t                        led_hint_time_count;
 uint16_t                        power_off_time_count;
 unsigned char                   charge_ok_delay_count;
 
 uint32_t                        lvd_hint_time_count;
-uint32_t                        charge_time_count;
 uint16_t                        threshold;
 
 //-----------------------------------------------------------------------------;
@@ -133,8 +125,8 @@ unsigned char           const    bat_li_value_a3_tbl[] =
 //=============================================================================;
 
 /******************************************************************************
-* 函数名称: bat_voltage_check
-* 功能描述: 检测电池节数
+* 函数名称: lvd_check
+* 功能描述: 从 threshold 开始逐档往下比较, 停在电池电压所在的档(最多 7 档)
 * 输入参数:
 * 输出参数:
 * 说    明:
@@ -158,17 +150,14 @@ __RAM_CODE void lvd_check(void)
 
 /******************************************************************************
 * 函数名称: bat_voltage_check
-* 功能描述: 检测电池节数
+* 功能描述: 测电池电压所在的档
 * 输入参数:
-* 输出参数:
-* 说    明:
+* 输出参数: POF 档位 + 1
+* 说    明: 先和 1.225V、1.400V/1.050V 比较缩小范围, 再逐档往下找
 ******************************************************************************/
 __RAM_CODE unsigned char bat_voltage_check(void)
 {
-    unsigned char i;
-
-    // POF_LVD_PIN_P23   POF_LVD_PIN_P33   POF_LVD_PIN_VBUS   POF_LVD_PIN_VDD
-	OM_POF->POFCON &= ~0x0E;
+	OM_POF->POFCON &= ~0x0E;                    // 检测脚选 P33(电池分压)
 	OM_POF->POFCON |= (POF_LVD_PIN_P33 << 1);
 
     threshold = POF_THRESHOLD_1_225V;
@@ -211,57 +200,55 @@ __RAM_CODE unsigned char bat_voltage_check(void)
     }
     mPOF_DISABLE;
 
-    i = ((threshold>>4)+1);
-    return i;
+    return ((threshold>>4)+1);
 }
 
 /******************************************************************************
 * 函数名称: bat_init
-* 功能描述: 检测电池节数
+* 功能描述: 电量检测初始化
 * 输入参数:
 * 输出参数:
-* 说    明:
+* 说    明: 标记上电待加载存储电量; 按芯片版本(A2/A3)定档位和百分比表, 之后不用每次再读 OM_RF->LINE
 ******************************************************************************/
 void bat_init(void)
 {
     bat_status |= blvd_power_on;
-    charge_time_count = 0;
+
+    if((iOM6239_A3_0 == OM_RF->LINE)||(iOM6239_A3_1 == OM_RF->LINE))
+    {
+        lvd_empty_value = iLVD_0_VALUE_A3;
+        lvd_charge_max  = iLVD_90_VALUE_A3;
+        lvd_full_value  = iLVD_100_VALUE_A3;
+        bat_pct_tbl     = bat_li_value_a3_tbl;
+    }
+    else
+    {
+        lvd_empty_value = iLVD_0_VALUE;
+        lvd_charge_max  = iLVD_90_VALUE;
+        lvd_full_value  = iLVD_100_VALUE;
+        bat_pct_tbl     = bat_li_value_tbl;
+    }
 }
 
 /******************************************************************************
 * 函数名称: bat_level_cal
-* 功能描述:
+* 功能描述: 电压档 -> 百分比
 * 输入参数:
 * 输出参数:
 * 说    明:
 ******************************************************************************/
 __RAM_CODE uint8_t bat_level_cal(uint8_t bat_level)
 {
-    if((iOM6239_A3_0 == OM_RF->LINE)||(iOM6239_A3_1 == OM_RF->LINE))
-    {
-        if(iLVD_0_VALUE_A3>=bat_level)
-            bat_level = 0;
-        else if(iLVD_100_VALUE_A3<=bat_level)
-            bat_level = 100;
-        else
-            bat_level = bat_li_value_a3_tbl[(bat_level-iLVD_0_VALUE_A3)&0x0F];
-    }
-    else
-    {
-        if(iLVD_0_VALUE>=bat_level)
-            bat_level = 0;
-        else if(iLVD_100_VALUE<=bat_level)
-            bat_level = 100;
-        else
-            bat_level = bat_li_value_tbl[(bat_level-iLVD_0_VALUE)&0x07];
-    }
-
-    return bat_level;
+    if(lvd_empty_value>=bat_level)
+        return 0;
+    if(lvd_full_value<=bat_level)
+        return 100;
+    return bat_pct_tbl[bat_level-lvd_empty_value];
 }
 
 /******************************************************************************
 * 函数名称: bat_check
-* 功能描述:
+* 功能描述: 跟踪电量档位: 充电时只升, 不充电时只降
 * 输入参数:
 * 输出参数:
 * 说    明:
@@ -319,14 +306,8 @@ __RAM_CODE void bat_check(void)
     if(iBAT_STEP_DT_MAX < dt)
         dt = iBAT_STEP_DT_MAX;
 
-    uint8_t lvd_full_min;                       // 充满时电池在 4.2V 附近, 至少在 80% 这一档
-    if((iOM6239_A3_0 == OM_RF->LINE)||(iOM6239_A3_1 == OM_RF->LINE))
-        lvd_full_min = iLVD_90_VALUE_A3;
-    else
-        lvd_full_min = iLVD_90_VALUE;
-
-    if((0 != (bat_status&bcharging))&&(0 != CHR_OK_PIN)&&(lvd_full_min <= bat_dat))
-    {                                           // 充满: CHR_OK 为高持续 10s 且电压在 80% 档以上才算。刚插线充电芯片还没开始充时
+    if((0 != (bat_status&bcharging))&&(0 != CHR_OK_PIN)&&(lvd_charge_max <= bat_dat))
+    {                                           // 充满: CHR_OK 为高持续 10s 且电压到了充电最高档(A2 80%)才算。刚插线充电芯片还没开始充时
         bat_full_delay += dt;                   // CHR_OK 脚可能靠上拉读到高, 原来读到一次就直接显示 100%
         if(iBAT_FULL_TIME <= bat_full_delay)
         {
@@ -352,10 +333,7 @@ __RAM_CODE void bat_check(void)
             bat_power_delay += dt;
             if(0 != (bat_status&bcharge_ok))
             {                                   // 充电完成
-                if((iOM6239_A3_0 == OM_RF->LINE)||(iOM6239_A3_1 == OM_RF->LINE))
-                    lvd_value = iLVD_100_VALUE_A3;
-                else
-                    lvd_value = iLVD_100_VALUE;
+                lvd_value = lvd_full_value;
 
                 if(100 != bat_value)
                 {
@@ -370,13 +348,7 @@ __RAM_CODE void bat_check(void)
             {                                   // 电压高于当前档的时间够充这一档的百分比才升(5%/10%/20% 一档), 跟实际充电速度差不多
                 bat_power_delay=0;
 
-                uint8_t lvd_value_temp;
-                if((iOM6239_A3_0 == OM_RF->LINE)||(iOM6239_A3_1 == OM_RF->LINE))
-                    lvd_value_temp = iLVD_90_VALUE_A3;
-                else
-                    lvd_value_temp = iLVD_90_VALUE;
-
-                if(lvd_value_temp>lvd_value)
+                if(lvd_charge_max>lvd_value)
                 {
                     lvd_value++;
 
@@ -404,13 +376,7 @@ __RAM_CODE void bat_check(void)
             {
                 bat_power_delay=0;
 
-                uint8_t lvd_value_temp;
-                if((iOM6239_A3_0 == OM_RF->LINE)||(iOM6239_A3_1 == OM_RF->LINE))
-                    lvd_value_temp = iLVD_0_VALUE_A3;
-                else
-                    lvd_value_temp = iLVD_0_VALUE;
-
-                if(lvd_value_temp < lvd_value)
+                if(lvd_empty_value < lvd_value)
                 {
                     lvd_value--;
 
@@ -429,7 +395,7 @@ __RAM_CODE void bat_check(void)
 
 /******************************************************************************
 * 函数名称: led_hint_process
-* 功能描述:
+* 功能描述: 刷新电量数字、%、电池图标(充电常亮/低电闪烁), 电量到 0 时低压关机
 * 输入参数:
 * 输出参数:
 * 说    明:
@@ -491,7 +457,6 @@ void led_hint_process(void)
         {                                       // 低电: 电池图标亮0.5s/灭1.5s闪烁
             if(exled&bled_BAT)
             {
-                exled |= bled_BAT;
                 if(mMS_TO_TICK(500) < (rtc_cur_value - lvd_hint_time_count))
                 {
                     exled &= ~bled_BAT;
@@ -501,7 +466,6 @@ void led_hint_process(void)
             }
             else
             {
-                exled &= ~bled_BAT;
                 if(mMS_TO_TICK(1500) < (rtc_cur_value - lvd_hint_time_count))
                 {
                     exled |= bled_BAT;
