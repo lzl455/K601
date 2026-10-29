@@ -486,6 +486,8 @@ void led_hint_process(void)
         {
             lvd_hint_time_count = 0;
             power_off_time_count = 0;
+            if(exled&bled_BAT)
+                exled_rtc_count = 0;            // 拔线(非低电): 电池图标马上灭, 不等下一个 500ms 刷新
 	        exled &= ~bled_BAT;
         }
     }
