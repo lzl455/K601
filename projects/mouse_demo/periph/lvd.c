@@ -61,7 +61,8 @@ bool                            bbat_check_scan;    // 上电用了存储电量,
 bool                            bcharging_bak;      // 上次的充电状态, 插拔时清零 bat_power_delay
 
 uint8_t                         lvd_scan_count;
-uint32_t                        bat_power_delay;    // 读数偏离当前档的净累计时间(RTC tick)
+uint32_t                        bat_power_delay;    // 读数偏离当前档的净次数
+uint16_t                        bat_full_count;     // 充电中 CHR_OK 连续为高的次数
 uint32_t                        bat_hold_delay;     // 拔线后暂不降档的剩余时间(RTC tick)
 uint32_t                        bat_check_rtc;      // 上次累计时的 RTC
 uint16_t                        led_hint_time_count;
@@ -271,8 +272,15 @@ __RAM_CODE void bat_check(void)
     bat_status &= ~(bcharge_ok|bcharging);
     if(0 != USB_5V_PIN)
         bat_status |= bcharging;
-    if(0 != CHR_OK_PIN)
-        bat_status |= bcharge_ok;
+    if((0 != (bat_status&bcharging))&&(0 != CHR_OK_PIN))
+    {                                           // 充满: 充电中 CHR_OK 连续 600 次(约 10s)为高才算。刚插线充电芯片
+        if(600 > bat_full_count)                // 还没开始充时 CHR_OK 可能先读到高, 读到一次就算会直接显示 100%
+            bat_full_count++;
+        else
+            bat_status |= bcharge_ok;
+    }
+    else
+        bat_full_count = 0;
 
     bat_dat = bat_voltage_check();
 
@@ -292,6 +300,12 @@ __RAM_CODE void bat_check(void)
         lvd_value = (bat_status&0x1F);
         bat_value = bat_level_cal(lvd_value);
         return;
+    }
+
+    if(bcharging_bak != (0 != (bat_status&bcharging)))
+    {                                           // 插拔充电线: 计数清零, 不把另一方向攒下的次数带过来
+        bcharging_bak = (0 != (bat_status&bcharging));
+        bat_power_delay = 0;
     }
 
     if(0 != (bat_status&bcharging))
@@ -337,6 +351,8 @@ __RAM_CODE void bat_check(void)
                 }
             }
         }
+        else if(0 != bat_power_delay)
+            bat_power_delay--;                  // 读数不偏高时回减: 净偏高 320 次才升一档, 偶发读数不累积
     }
     else
     {
@@ -365,6 +381,8 @@ __RAM_CODE void bat_check(void)
                 }
             }
         }
+        else if(0 != bat_power_delay)
+            bat_power_delay--;                  // 读数不偏低时回减: 射频发射瞬间等偶发低读数不累积
     }
 }
 
