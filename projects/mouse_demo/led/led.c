@@ -144,7 +144,7 @@ void device_led_process(void)
     rtc_cur_value = drv_rtc_read(OM_RTC);
 
     if(ble_24g_ctrl&bom6239_sync_ok)
-    {                                           // 装饰灯: 蓝牙(HID 已就绪)/2.4G(已同步接收器)连上才亮,
+    {                                           // 装饰灯: 键盘能用才亮 = 蓝牙链路已加密且 HID 已就绪 / 2.4G 已同步接收器,
         mDECO_LED_ON;                           // 回连、对码、找接收器时灭。休眠由 mouse_periph_wakeup_enable()
     }                                           // 关灯, 睡眠里不调本函数, 醒来后在这里按连接状态再开
     else

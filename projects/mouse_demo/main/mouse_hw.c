@@ -75,6 +75,7 @@ const char                  bt_kb_name_tbl_bt2[MOUSE_NAME_MAX_LEN] ="AUSDOM K98P
 char                        bt_kb_name[MOUSE_NAME_MAX_LEN];
 
 uint8_t                     ble_interval;
+bool                        bble_encrypted;     // 本次连接已加密: ex2_ll_hci_ev_encrypt_chg() 置, 重新广播时清
 
 extern bool                 bperiph_int;
 extern uint32_t             adv_interval_ms;
@@ -129,6 +130,17 @@ extern bool profile_bas_tx_notification(uint8_t level);
 extern  uint8_t hid_keyboard_out_report_value;
 
 /*********************************************************************
+ * 协议栈弱函数的实现: 收到 LL_START_ENC_RSP, 链路加密完成(回连和新配对都会走到)。
+ * 回连时 RECONNECT 事件里就打开了 HID 通知, 比加密完成早; 加密没完成按键发不到主机,
+ * 加密约 3s 还没完成协议栈报 CONN_TIMEOUT(复位)
+ */
+bool ex2_ll_hci_ev_encrypt_chg(void)
+{
+    bble_encrypted = true;
+    return false;                               // 返回值协议栈不用, 同弱函数
+}
+
+/*********************************************************************
  * LOCAL FUNCTIONS
  */
 __RAM_CODE uint8_t ex2_app_mouse_scan(void)
@@ -139,7 +151,8 @@ __RAM_CODE uint8_t ex2_app_mouse_scan(void)
         return 0;
     }
 
-    ble_24g_ctrl |= bom6239_sync_ok;
+    if(true == bble_encrypted)                  // 链路加密后按键才真正发到主机, 这时才算连上(图标常亮、装饰灯亮)
+        ble_24g_ctrl |= bom6239_sync_ok;
 
     if(MS_SLEEP_LEVEL0 == ms_sleep_level)
     {
