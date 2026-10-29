@@ -101,7 +101,7 @@ uint32_t            const    ble_sleep_1_time_tbl[] =
 
 uint32_t             const    ble_sleep_2_time_tbl[] =
 {
-    mMS_TO_TICK(1*60*1000),                     // 5min
+    mMS_TO_TICK(5*60*1000),                     // 5min
     mMS_TO_TICK(10*60*1000),                    // 10min
     mMS_TO_TICK(15*60*1000),                    // 15min
     mMS_TO_TICK(20*60*1000),                    // 20min
