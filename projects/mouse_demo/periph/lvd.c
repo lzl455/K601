@@ -47,6 +47,7 @@ POFCON bit(0):低电压指示标志位，低于门限值时为低电平，否则
 #define iBAT_CHARGE_PCT_TIME    mMS_TO_TICK(108*1000)   // 充电: 每 1% 至少 108s(按约 3 小时充满), 升一档的时间按这一档的百分比差算
 #define iBAT_UNPLUG_HOLD_TIME   mMS_TO_TICK(10*60*1000) // 拔掉充电线后 10 分钟内不降档: 刚停充电压偏高, 要回落一阵
 #define iBAT_STEP_DT_MAX        mMS_TO_TICK(1000)       // 每次最多累计 1s: 睡眠里两次检测隔得久, 不能一下攒满
+#define iBAT_FULL_TIME          mMS_TO_TICK(10*1000)    // 充电中 CHR_OK 持续为高满 10s 才算充满
 
 //-----------------------------------------------------------------------------;
 // 变量定义区
@@ -63,6 +64,7 @@ bool                            bcharging_bak;      // 上次的充电状态, �
 uint8_t                         lvd_scan_count;
 uint32_t                        bat_power_delay;    // 读数偏离当前档的净累计时间(RTC tick)
 uint32_t                        bat_hold_delay;     // 拔线后暂不降档的剩余时间(RTC tick)
+uint32_t                        bat_full_delay;     // 充电中 CHR_OK 持续为高的时间(RTC tick)
 uint32_t                        bat_check_rtc;      // 上次累计时的 RTC
 uint16_t                        led_hint_time_count;
 uint16_t                        power_off_time_count;
@@ -269,11 +271,9 @@ __RAM_CODE void bat_check(void)
     uint8_t bat_dat;
     uint32_t dt;
 
-    bat_status &= ~(bcharge_ok|bcharging);
+    bat_status &= ~(bcharge_ok|bcharging);      // bcharge_ok 在下面确认充满后才置
     if(0 != USB_5V_PIN)
         bat_status |= bcharging;
-    if(0 != CHR_OK_PIN)
-        bat_status |= bcharge_ok;
 
     bat_dat = bat_voltage_check();
 
@@ -318,6 +318,24 @@ __RAM_CODE void bat_check(void)
     bat_check_rtc = rtc_cur_value;              // (调用者 led_hint_process() 刚读过 RTC)
     if(iBAT_STEP_DT_MAX < dt)
         dt = iBAT_STEP_DT_MAX;
+
+    uint8_t lvd_full_min;                       // 充满时电池在 4.2V 附近, 至少在 80% 这一档
+    if((iOM6239_A3_0 == OM_RF->LINE)||(iOM6239_A3_1 == OM_RF->LINE))
+        lvd_full_min = iLVD_90_VALUE_A3;
+    else
+        lvd_full_min = iLVD_90_VALUE;
+
+    if((0 != (bat_status&bcharging))&&(0 != CHR_OK_PIN)&&(lvd_full_min <= bat_dat))
+    {                                           // 充满: CHR_OK 为高持续 10s 且电压在 80% 档以上才算。刚插线充电芯片还没开始充时
+        bat_full_delay += dt;                   // CHR_OK 脚可能靠上拉读到高, 原来读到一次就直接显示 100%
+        if(iBAT_FULL_TIME <= bat_full_delay)
+        {
+            bat_full_delay = iBAT_FULL_TIME;
+            bat_status |= bcharge_ok;
+        }
+    }
+    else
+        bat_full_delay = 0;
 
     if(bcharging_bak != (0 != (bat_status&bcharging)))
     {                                           // 插拔充电线: 计时清零, 不把另一方向攒下的时间带过来
