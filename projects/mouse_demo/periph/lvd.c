@@ -377,7 +377,7 @@ __RAM_CODE void bat_check(void)
 ******************************************************************************/
 void led_hint_process(void)
 {
-    uint8_t i;-----------------
+    uint8_t i;
 
     rtc_cur_value = drv_rtc_read(OM_RTC);
     bat_check();
