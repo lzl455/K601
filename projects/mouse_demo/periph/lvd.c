@@ -43,7 +43,10 @@ POFCON bit(0):低电压指示标志位，低于门限值时为低电平，否则
 
 #define	mPOF_WARM_READ     		(OM_POF->POFCON & 0x01)
 
-#define iBAT_POWER_KEEP_MAGIC   0x5AC0B001  // 写在 PMU 保持寄存器 SW_RSVD3, 断电才清零
+#define iBAT_STEP_TIME          mMS_TO_TICK(60*1000)    // 不充电: 读数低于当前档的净累计时间满 60s 才降一档
+#define iBAT_CHARGE_PCT_TIME    mMS_TO_TICK(108*1000)   // 充电: 每 1% 至少 108s(按约 3 小时充满), 升一档的时间按这一档的百分比差算
+#define iBAT_UNPLUG_HOLD_TIME   mMS_TO_TICK(10*60*1000) // 拔掉充电线后 10 分钟内不降档: 刚停充电压偏高, 要回落一阵
+#define iBAT_STEP_DT_MAX        mMS_TO_TICK(1000)       // 每次最多累计 1s: 睡眠里两次检测隔得久, 不能一下攒满
 
 //-----------------------------------------------------------------------------;
 // 变量定义区
@@ -56,10 +59,11 @@ bool                            bkey_bat_update;
 bool                            bbat_update;
 bool                            bbat_check_scan;    // 上电用了存储电量, 待约 1s 后用实测值校一次
 bool                            bcharging_bak;      // 上次的充电状态, 插拔时清零 bat_power_delay
-bool                            bbat_cold_boot;     // 上电复位(拨开关开机), 不是深睡唤醒
 
 uint8_t                         lvd_scan_count;
-uint16_t                        bat_power_delay;
+uint32_t                        bat_power_delay;    // 读数偏离当前档的净累计时间(RTC tick)
+uint32_t                        bat_hold_delay;     // 拔线后暂不降档的剩余时间(RTC tick)
+uint32_t                        bat_check_rtc;      // 上次累计时的 RTC
 uint16_t                        led_hint_time_count;
 uint16_t                        power_off_time_count;
 unsigned char                   charge_ok_delay_count;
@@ -220,9 +224,6 @@ void bat_init(void)
 {
     bat_status |= blvd_power_on;
     charge_time_count = 0;
-                                                // 拨开关开机(真断过电)才算: PMU 保持寄存器断电才清零。不能看 RSTCTRL/SW_RSVD7,
-    bbat_cold_boot = (iBAT_POWER_KEEP_MAGIC != OM_PMU->SW_RSVD3);   // bootloader 对上电和非上电复位都是软复位再跳进 app, 分不出来
-    OM_PMU->SW_RSVD3 = iBAT_POWER_KEEP_MAGIC;
 }
 
 /******************************************************************************
@@ -266,6 +267,7 @@ __RAM_CODE uint8_t bat_level_cal(uint8_t bat_level)
 __RAM_CODE void bat_check(void)
 {
     uint8_t bat_dat;
+    uint32_t dt;
 
     bat_status &= ~(bcharge_ok|bcharging);
     if(0 != USB_5V_PIN)
@@ -298,13 +300,10 @@ __RAM_CODE void bat_check(void)
     }
 
     if((true == bbat_check_scan)&&(1000 <= sys_tick_count))
-    {                                           // 上电校准: 不充电时实测与存储值差 2 档及以上, 说明存储值已过期
-        bbat_check_scan = false;                // (如关机后单独充过电、换过电池), 改用实测值;
-        uint8_t check_gap = 2;                  // 差 1 档以内保留存储值, 免得每次唤醒在两档之间跳
-        if(true == bbat_cold_boot)              // 拨开关开机: 中间档芯片断电但仍在充电, 差 1 档也改用实测值
-            check_gap = 1;
-        if((0 == (bat_status&bcharging))
-            &&((bat_dat >= lvd_value+check_gap)||(lvd_value >= bat_dat+check_gap)))
+    {                                           // 上电校准: 不充电时实测比存储值低 2 档及以上, 说明存储值已过期(如放了很久),
+        bbat_check_scan = false;                // 改用实测值。只往下校: 不充电时电量不能变高(各档位插线时芯片都在跑,
+        if((0 == (bat_status&bcharging))        // 充电进度已经记下来了); 差 1 档交给下面的慢速跟踪
+            &&(lvd_value >= bat_dat+2))
         {
             lvd_value = bat_dat;
             bat_status &= 0xE0;
@@ -315,17 +314,24 @@ __RAM_CODE void bat_check(void)
         }
     }
 
+    dt = rtc_cur_value - bat_check_rtc;         // 按时间累计, 不按次数: 各模式调用间隔 5ms~100ms 以上不等
+    bat_check_rtc = rtc_cur_value;              // (调用者 led_hint_process() 刚读过 RTC)
+    if(iBAT_STEP_DT_MAX < dt)
+        dt = iBAT_STEP_DT_MAX;
+
     if(bcharging_bak != (0 != (bat_status&bcharging)))
-    {                                           // 插拔充电线: 计数清零, 不把另一方向攒下的次数带过来
+    {                                           // 插拔充电线: 计时清零, 不把另一方向攒下的时间带过来
         bcharging_bak = (0 != (bat_status&bcharging));
         bat_power_delay = 0;
+        if(false == bcharging_bak)
+            bat_hold_delay = iBAT_UNPLUG_HOLD_TIME;
     }
 
     if(0 != (bat_status&bcharging))
     {                                           // 充电中
         if(bat_dat > lvd_value)
         {
-            bat_power_delay++;
+            bat_power_delay += dt;
             if(0 != (bat_status&bcharge_ok))
             {                                   // 充电完成
                 if((iOM6239_A3_0 == OM_RF->LINE)||(iOM6239_A3_1 == OM_RF->LINE))
@@ -342,8 +348,8 @@ __RAM_CODE void bat_check(void)
                     bbat_update = true;
                 }
             }
-            else if((5*64) < bat_power_delay)
-            {
+            else if((uint32_t)(bat_level_cal(lvd_value+1)-bat_level_cal(lvd_value))*iBAT_CHARGE_PCT_TIME <= bat_power_delay)
+            {                                   // 电压高于当前档的时间够充这一档的百分比才升(5%/10%/20% 一档), 跟实际充电速度差不多
                 bat_power_delay=0;
 
                 uint8_t lvd_value_temp;
@@ -364,15 +370,19 @@ __RAM_CODE void bat_check(void)
                 }
             }
         }
-        else if(0 != bat_power_delay)
-            bat_power_delay--;                  // 读数不偏高时回减: 净偏高 320 次才升一档, 偶发读数不累积
+        else                                    // 读数不偏高时回减: 偶发读数不累积
+            bat_power_delay = (dt < bat_power_delay) ? (bat_power_delay-dt) : 0;
     }
     else
-    {
-        if(bat_dat < lvd_value)
+    {                                           // 不充电: 只降不升
+        if(0 != bat_hold_delay)
+        {                                       // 刚拔线, 电压还在回落: 先不降
+            bat_hold_delay = (dt < bat_hold_delay) ? (bat_hold_delay-dt) : 0;
+        }
+        else if(bat_dat < lvd_value)
         {
-            bat_power_delay++;
-            if((5*64) < bat_power_delay)
+            bat_power_delay += dt;
+            if(iBAT_STEP_TIME <= bat_power_delay)
             {
                 bat_power_delay=0;
 
@@ -394,8 +404,8 @@ __RAM_CODE void bat_check(void)
                 }
             }
         }
-        else if(0 != bat_power_delay)
-            bat_power_delay--;                  // 读数不偏低时回减: 射频发射瞬间等偶发低读数不累积
+        else                                    // 读数不偏低时回减: 射频发射瞬间等偶发低读数不累积
+            bat_power_delay = (dt < bat_power_delay) ? (bat_power_delay-dt) : 0;
     }
 }
 
