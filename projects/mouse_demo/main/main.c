@@ -162,9 +162,7 @@ void mouse_periph_wakeup_enable(uint8_t mask)
         NVIC_DisableIRQ(WAKEUP_GPIO0_IRQn);
 
         OM_PMU->PAD_PU_CTRL_1 = 0x020AA800;  // 与上电初始化相同
-        MATRX_ALL_IN;
-        if(iDEVICE_TYPE_ERR != device_type) // 已进入蓝牙/2.4G 工作: 装饰灯亮
-            mDECO_LED_ON;                   // (上电早期/充电档 device_type 为 ERR, 不亮)
+        MATRX_ALL_IN;                       // 装饰灯不在这里开: 醒来后由 device_led_process() 按连接状态开关
     }
 
     OM_CRITICAL_END();
@@ -431,8 +429,7 @@ soft_reset_process:
         rtc_init();
         b24g_nromal = false;
         flash_load_ble_addr();
-        device_led_on();
-        mDECO_LED_ON;                       // 开机进入蓝牙/2.4G: 装饰灯亮
+        device_led_on();                    // 装饰灯先不亮, 无线连上后才亮(device_led_process())
 
         key_ctrl &= ~bwin_mac_sataus;           // 目前品旭的要求系统与模式强关联，需要先加载模式，再设置系统类型
         if(sys_mode&(1<<(device_type&0x07)))
