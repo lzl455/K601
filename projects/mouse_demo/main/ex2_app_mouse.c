@@ -42,6 +42,7 @@ extern ex2_gap_ppcp_t ex2_gap_ppcp_value;
 extern const char               bt_kb_name_tbl_bt0[MOUSE_NAME_MAX_LEN];
 extern const char               bt_kb_name_tbl_bt1[MOUSE_NAME_MAX_LEN];
 extern const char               bt_kb_name_tbl_bt2[MOUSE_NAME_MAX_LEN];
+extern bool                     bble_encrypted;
 
 /*******************************************************************************
  * LOCAL FUNCTIONS
@@ -124,6 +125,7 @@ void ex2_app_mouse_broadcast_fsm(void)
     bool adv_en;
 
     ble_24g_ctrl &= ~bom6239_sync_ok;
+    bble_encrypted = false;                     // 下一次连接要重新加密完才算连上
     adv_en = true;
     switch (mouse_state) {
         case MOUSE_LE_STATE_ADV:
