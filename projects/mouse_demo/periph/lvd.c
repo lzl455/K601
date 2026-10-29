@@ -266,8 +266,7 @@ __RAM_CODE uint8_t bat_level_cal(uint8_t bat_level)
 ******************************************************************************/
 __RAM_CODE void bat_check(void)
 {
-    uint8_t bat_dat;
-    uint32_t dt;
+    uint8_t bat_dat, bat_temp;
 
     bat_status &= ~(bcharge_ok|bcharging);
     if(0 != USB_5V_PIN)
@@ -288,10 +287,6 @@ __RAM_CODE void bat_check(void)
             bsave_status = true;
             bbat_update = true;
         }
-        else
-        {                                       // 存储值有效: 先用它显示, 约 1s 后再用实测值校一次
-            bbat_check_scan = true;
-        }
         bat_status &= ~blvd_power_on;
 
         lvd_value = (bat_status&0x1F);
@@ -299,39 +294,11 @@ __RAM_CODE void bat_check(void)
         return;
     }
 
-    if((true == bbat_check_scan)&&(1000 <= sys_tick_count))
-    {                                           // 上电校准: 不充电时实测比存储值低 2 档及以上, 说明存储值已过期(如放了很久),
-        bbat_check_scan = false;                // 改用实测值。只往下校: 不充电时电量不能变高(各档位插线时芯片都在跑,
-        if((0 == (bat_status&bcharging))        // 充电进度已经记下来了); 差 1 档交给下面的慢速跟踪
-            &&(lvd_value >= bat_dat+2))
-        {
-            lvd_value = bat_dat;
-            bat_status &= 0xE0;
-            bat_status |= lvd_value;
-            bat_value = bat_level_cal(lvd_value);
-            bsave_status = true;
-            bbat_update = true;
-        }
-    }
-
-    dt = rtc_cur_value - bat_check_rtc;         // 按时间累计, 不按次数: 各模式调用间隔 5ms~100ms 以上不等
-    bat_check_rtc = rtc_cur_value;              // (调用者 led_hint_process() 刚读过 RTC)
-    if(iBAT_STEP_DT_MAX < dt)
-        dt = iBAT_STEP_DT_MAX;
-
-    if(bcharging_bak != (0 != (bat_status&bcharging)))
-    {                                           // 插拔充电线: 计时清零, 不把另一方向攒下的时间带过来
-        bcharging_bak = (0 != (bat_status&bcharging));
-        bat_power_delay = 0;
-        if(false == bcharging_bak)
-            bat_hold_delay = iBAT_UNPLUG_HOLD_TIME;
-    }
-
     if(0 != (bat_status&bcharging))
     {                                           // 充电中
         if(bat_dat > lvd_value)
         {
-            bat_power_delay += dt;
+            bat_power_delay++;
             if(0 != (bat_status&bcharge_ok))
             {                                   // 充电完成
                 if((iOM6239_A3_0 == OM_RF->LINE)||(iOM6239_A3_1 == OM_RF->LINE))
@@ -348,8 +315,8 @@ __RAM_CODE void bat_check(void)
                     bbat_update = true;
                 }
             }
-            else if((uint32_t)(bat_level_cal(lvd_value+1)-bat_level_cal(lvd_value))*iBAT_CHARGE_PCT_TIME <= bat_power_delay)
-            {                                   // 电压高于当前档的时间够充这一档的百分比才升(5%/10%/20% 一档), 跟实际充电速度差不多
+            else if((5*64) < bat_power_delay)
+            {
                 bat_power_delay=0;
 
                 uint8_t lvd_value_temp;
@@ -370,19 +337,13 @@ __RAM_CODE void bat_check(void)
                 }
             }
         }
-        else                                    // 读数不偏高时回减: 偶发读数不累积
-            bat_power_delay = (dt < bat_power_delay) ? (bat_power_delay-dt) : 0;
     }
     else
-    {                                           // 不充电: 只降不升
-        if(0 != bat_hold_delay)
-        {                                       // 刚拔线, 电压还在回落: 先不降
-            bat_hold_delay = (dt < bat_hold_delay) ? (bat_hold_delay-dt) : 0;
-        }
-        else if(bat_dat < lvd_value)
+    {
+        if(bat_dat < lvd_value)
         {
-            bat_power_delay += dt;
-            if(iBAT_STEP_TIME <= bat_power_delay)
+            bat_power_delay++;
+            if((5*64) < bat_power_delay)
             {
                 bat_power_delay=0;
 
@@ -404,8 +365,6 @@ __RAM_CODE void bat_check(void)
                 }
             }
         }
-        else                                    // 读数不偏低时回减: 射频发射瞬间等偶发低读数不累积
-            bat_power_delay = (dt < bat_power_delay) ? (bat_power_delay-dt) : 0;
     }
 }
 
@@ -418,7 +377,7 @@ __RAM_CODE void bat_check(void)
 ******************************************************************************/
 void led_hint_process(void)
 {
-    uint8_t i;
+    uint8_t i;-----------------
 
     rtc_cur_value = drv_rtc_read(OM_RTC);
     bat_check();
