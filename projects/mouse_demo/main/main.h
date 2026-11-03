@@ -151,6 +151,9 @@
 // 装饰灯: P23 接正极, P01 接负极。蓝牙/2.4G 连上后亮(device_led_process() 按连接标志开关),
 // 回连/对码/找接收器时、休眠时、充电档灭。灭时两脚都输出低, LED 两端无电压(不反偏)
 //
+// 亮度由 PWM 通道1(P01, 负极)调: P23 输出高, P01 的 GPIO 保持输出低, PWM 打开后接管 P01。
+// 所以 PWM 关掉前要先把 P23 拉低, 否则 P01 回到 GPIO 低电平, 灯会全亮一下(logo_off())
+//
 #define DECO_LED_P_PIN          (2*8+3)
 #define DECO_LED_N_PIN          (0*8+1)
 
@@ -159,6 +162,10 @@
                                  OM_GPIO0->OUTENSET = (1u<<DECO_LED_P_PIN)|(1u<<DECO_LED_N_PIN);}
 #define mDECO_LED_OFF           {OM_GPIO0->DATAOUTCLR = (1u<<DECO_LED_P_PIN)|(1u<<DECO_LED_N_PIN);\
                                  OM_GPIO0->OUTENSET = (1u<<DECO_LED_P_PIN)|(1u<<DECO_LED_N_PIN);}
+
+#define DECO_PWM_CH             1                       // P01 = PWM 通道1 (P00 是 54E UART, 不能开通道0)
+#define DECO_PWM_EN             (1u<<DECO_PWM_CH)       // PWMCON / PWMCR0 / PWMCR1 里的通道位
+#define DECO_PWM_DC             OM_PWM->PWMDC1          // 灯亮的宽度, 0 ~ PWMPRD
 //
 //----------------------------------------------
 // 电源其他

@@ -34,11 +34,140 @@ uint32_t                        led_delay_count;
 
 uint32_t                        exled_rtc_count=0;  // 54E 显示刷新节拍
 
+bool                            bpwm_valid;
+bool                            bback_led_status;
+
+uint8_t                         led_cur_mode = iMODE_LED_ON;        // 装饰灯默认常亮
+uint8_t                         led_pre_mode = iMODE_LED_INVALID;
+enum led_level                  led_light_lev = iLED_LEV_MAX;
+enum led_level                  led_light_lev_bak;
+enum speed_level                led_speed_lev = iSPEED_LEV_1;
+
+uint8_t                         pwm_value;
+uint8_t                         pwm_time_count;
+uint16_t                        delay_time_count;
+
 extern bool                     b24g_nromal;
 
 //=============================================================================;
 // 代码区                                                                       ;
 //=============================================================================;
+
+/******************************************************************************
+* 函数名称: pwm_init
+* 功能描述: 装饰灯 PWM 初始化(通道1, P01)
+* 输入参数:
+* 输出参数:
+* 说    明: 亮度按档位改周期: 占空比最大 iPWM_MAX, 周期越长越暗。
+*           LED 负极接 P01, 低电平亮: 通道设为高有效, 非有效(低)宽度 PWMDC1 就是灯亮的宽度。
+*           只开通道1, 不能碰通道0(P00 是 54E UART)
+******************************************************************************/
+void pwm_init(void)
+{
+    bpwm_valid = true;
+
+    DRV_RCC_CLOCK_ENABLE(RCC_CLK_PWM, 1U);
+    OM_PWM->PWMCON &= ~DECO_PWM_EN;
+    OM_PWM->PWMCR0 |= DECO_PWM_EN;
+    OM_PWM->PWMCR1 |= DECO_PWM_EN;
+    OM_PWM->PWMDIV = 0x00000003;
+
+    if(iLED_LEV_4 == led_light_lev)
+        OM_PWM->PWMPRD = iPWM_MAX;
+    else if(iLED_LEV_3 == led_light_lev)
+        OM_PWM->PWMPRD = iPWM_MAX*2;
+    else if(iLED_LEV_2 == led_light_lev)
+        OM_PWM->PWMPRD = iPWM_MAX*4;
+    else
+        OM_PWM->PWMPRD = iPWM_MAX*8;
+
+    DECO_PWM_DC = 0;
+    OM_PWM->PWMCON |= DECO_PWM_EN;
+    mDECO_LED_ON;                               // PWM 接管 P01 后再给 P23 上电, 不闪全亮
+}
+
+/******************************************************************************
+* 函数名称: logo_off
+* 功能描述: 装饰灯灭, 关 PWM
+* 输入参数:
+* 输出参数:
+* 说    明: 先拉低 P23 再关 PWM: 关了 PWM 的 P01 是 GPIO 低电平, P23 还高的话灯会全亮
+******************************************************************************/
+void logo_off(void)
+{
+    mDECO_LED_OFF;
+    bpwm_valid = false;
+    OM_PWM->PWMCON = 0x00000000;
+    led_pre_mode = iMODE_LED_INVALID;           // 下次打开按当前模式重新开始
+}
+
+/******************************************************************************
+* 函数名称: deco_led_process
+* 功能描述: 装饰灯按模式(常亮/呼吸/心跳)刷新
+* 输入参数:
+* 输出参数:
+* 说    明: device_led_process() 在连上时每 15ms 左右调用一次
+******************************************************************************/
+void deco_led_process(void)
+{
+    if((iMODE_LED_OFF == led_cur_mode) || (iLED_LEV_MIN == led_light_lev))
+    {
+        logo_off();
+        return;
+    }
+
+    if(false == bpwm_valid)
+    {
+        led_light_lev_bak = led_light_lev;
+        pwm_init();
+    }
+
+    if(led_light_lev != led_light_lev_bak)
+    {
+        led_light_lev_bak = led_light_lev;
+        pwm_init();
+    }
+
+    if(led_pre_mode != led_cur_mode)
+    {
+        led_pre_mode = led_cur_mode;
+
+        switch(led_cur_mode)
+        {
+            case iMODE_LED_ON:
+                DECO_PWM_DC = iPWM_MAX-1;
+                break;
+            case iMODE_LED_BREATH:
+                pwm_time_count = 0;
+                delay_time_count = 0;
+                bback_led_status = true;        // 从灭开始渐亮
+                DECO_PWM_DC = 0;
+                break;
+            case iMODE_LED_HB:
+                delay_time_count = 0;
+                break;
+            default:
+                break;
+        }
+    }
+    else
+    {
+        switch(led_cur_mode)
+        {
+            case iMODE_LED_ON:
+                DECO_PWM_DC = iPWM_MAX-1;
+                break;
+            case iMODE_LED_BREATH:
+                effect_breatch();
+                break;
+            case iMODE_LED_HB:
+                effect_heartbeat();
+                break;
+            default:
+                break;
+        }
+    }
+}
 
 /*******************************************************************************
 * 函数名称: device_led_on()
@@ -145,11 +274,11 @@ void device_led_process(void)
 
     if(ble_24g_ctrl&bom6239_sync_ok)
     {                                           // 装饰灯: 键盘能用才亮 = 蓝牙链路已加密且 HID 已就绪 / 2.4G 已同步接收器,
-        mDECO_LED_ON;                           // 回连、对码、找接收器时灭。休眠由 mouse_periph_wakeup_enable()
+        deco_led_process();                     // 回连、对码、找接收器时灭。休眠由 mouse_periph_wakeup_enable()
     }                                           // 关灯, 睡眠里不调本函数, 醒来后在这里按连接状态再开
     else
     {
-        mDECO_LED_OFF;
+        logo_off();
     }
 
     if(iDEVICE_TYPE_USB != device_type)
