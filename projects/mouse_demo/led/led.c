@@ -27,7 +27,7 @@
 bool                            bdevice_led_status;
 bool                            bled_bright_en;
 enum led_level                  led_light_lev;
-enum led_level                  led_light_lev_bak = iLED_LEV_MAX;
+enum led_level                  led_light_lev_bak = iLED_LEV_MIN;  // 调光级别只用 1~4, 初值 MIN 保证第一次亮灯先 deco_pwm_init()
 
 uint8_t                         device_conn_index=0;
 uint8_t                         device_hint_count;
