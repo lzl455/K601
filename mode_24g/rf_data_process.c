@@ -127,7 +127,10 @@ void rf_sync_ok_process(void)
 __RAM_CODE void rf_normal_mode_sleep(void)
 {                       
     OM_CRITICAL_BEGIN();
-    drv_pmu_set_low_power_mode(PMU_LPM_STOP1);
+    if(0x00000000 == OM_PWM->PWMCON)
+        drv_pmu_set_low_power_mode(PMU_LPM_STOP1);  // PWM没有打开，可以进入STOP1
+    else
+        drv_pmu_set_low_power_mode(PMU_LPM_IDLE);   // 装饰灯 PWM 打开着, STOP1 会停掉 PWM
     OM_CRITICAL_END();
 }
 
