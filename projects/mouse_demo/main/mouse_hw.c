@@ -88,13 +88,15 @@ pmu_lpm_t pm_checker_callback(void)
     if(ms_sleep_level < MS_SLEEP_LEVEL2) {
         if(MS_SLEEP_LEVEL0 == ms_sleep_level)
         {                                       // 此处根据实际情况设置，有PWM等不同外设，休眠状态会有差异
+            if(0x00000000 != OM_PWM->PWMCON)
+                return PMU_LPM_IDLE;            // 装饰灯 PWM 打开着, STOP1 会停掉 PWM
             if(0 != OM_RTC->TICK)
                 return PMU_LPM_IDLE;
         }
 
         /* 距离下次唤醒时间剩余300us， 不进入休眠, 否则进入休眠 */
         if ((ex2_stk_sleep_duration_get() > 10))
-            return PMU_LPM_STOP1;
+            return PMU_LPM_STOP1;               // PWM没有打开，可以进入STOP1
     }
     else
     {
@@ -115,7 +117,12 @@ pmu_lpm_t pm_checker_callback(void)
                 NVIC_SystemReset();
 
             if((ex2_stk_sleep_duration_get() > 10))
-                return PMU_LPM_STOP1;
+            {
+                if(0x00000000 == OM_PWM->PWMCON)
+                    return PMU_LPM_STOP1;       // PWM没有打开，可以进入STOP1
+                else
+                    return PMU_LPM_IDLE;
+            }
         }
     }
 
