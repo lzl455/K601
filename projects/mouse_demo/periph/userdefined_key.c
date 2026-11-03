@@ -19,6 +19,7 @@
 #include "userdefined_key.h"
 #include "key_code_define.h"
 #include "flash_process.h"
+#include "led.h"                                // 装饰灯调光 led_light_lev
 
 #include "matrix_key.h"
 #include "matrix_key_tbl_win.h"
@@ -38,6 +39,7 @@ bool                            bcom_fire_status;
 bool                            bsniper_key_press;
 bool                            bsniper_key_add_sub;
 bool                            bkey_break_or_realse;
+extern bool                     bled_bright_en;
 
 uint16_t                        special_key;
 uint16_t                        special_key_bak;
@@ -500,7 +502,43 @@ std_key_decode_1:
 
                     }
                     else*/ if(iLED_CTRL == (decode_data_l & iKEY_SPECIAL_MASK))
-                    {                                                // 本机无背光, 灯光控制键不处理
+                    {
+                        switch(decode_data_l&0x0F)
+                        {
+                            case iLED_BRIGHT_SUB&0x0F:
+                                special_key |= bkey_light_dn;
+                                if((0==(special_key_bak&bkey_light_dn_bak)) && (true==bled_bright_en))
+                                {                           // 长按只减一级(不连发), 关灯状态不调光
+                                    special_key_bak |= bkey_light_dn_bak;
+                                    if(led_light_lev > iLED_LEV_1)
+                                    {
+                                        led_light_lev--;
+                                        key_ctrl |= bfn_save_status;
+                                    }
+                                }
+                                break;
+                            case iLED_BRIGHT_ADD&0x0F:
+                                special_key |= bkey_light_up;
+                                if((0==(special_key_bak&bkey_light_up_bak)) && (true==bled_bright_en))
+                                {
+                                    special_key_bak |= bkey_light_up_bak;
+                                    if(led_light_lev < iLED_LEV_MAX)
+                                    {
+                                        led_light_lev++;
+                                        key_ctrl |= bfn_save_status;
+                                    }
+                                }
+                                break;
+                            case iLED_OFF&0x0F:
+                                special_key |= bled_off;
+                                if(0==(special_key_bak&bled_off_back))
+                                {
+                                    special_key_bak |= bled_off_back;
+                                    bled_bright_en = !bled_bright_en;
+                                    key_ctrl |= bfn_save_status;
+                                }
+                                break;
+                        }
                     }
                     else if(iKEY_MODE_SWITCH == (decode_data_l & iKEY_SPECIAL_MASK))
                     {

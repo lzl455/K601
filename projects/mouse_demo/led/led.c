@@ -25,6 +25,9 @@
 // 变量定义区
 //
 bool                            bdevice_led_status;
+bool                            bled_bright_en;
+enum led_level                  led_light_lev;
+enum led_level                  led_light_lev_bak = iLED_LEV_MAX;
 
 uint8_t                         device_conn_index=0;
 uint8_t                         device_hint_count;
@@ -39,6 +42,68 @@ extern bool                     b24g_nromal;
 //=============================================================================;
 // 代码区                                                                       ;
 //=============================================================================;
+
+/*******************************************************************************
+* 函数名称: deco_pwm_init()
+* 功能描述: 装饰灯 PWM 调光初始化(移植自 AK103): 固定导通宽度 PWMDC0=63,
+*           拉长周期 PWMPRD 分 4 级调光。P01(负极)由 PWM 通道0驱动, 低电平亮
+* 输入参数： 无
+* 输出参数： 无
+* 说    明: PWMCR0=1 通道0初始电平高, PWMCR1=0 有效电平低(亮)
+******************************************************************************/
+void deco_pwm_init(void)
+{
+    DRV_RCC_CLOCK_ENABLE(RCC_CLK_PWM, 1U);
+    OM_PWM->PWMCR0 = 0x00000002;
+    OM_PWM->PWMCR1 = 0x00000000;
+    OM_PWM->PWMDIV = 0x00000003;               // 32 分频
+
+    if(iLED_LEV_4 == led_light_lev)
+        OM_PWM->PWMPRD = 64;
+    else if(iLED_LEV_3 == led_light_lev)
+        OM_PWM->PWMPRD = 128;
+    else if(iLED_LEV_2 == led_light_lev)
+        OM_PWM->PWMPRD = 256;
+    else
+        OM_PWM->PWMPRD = 512;
+
+    OM_PWM->PWMDC0 = 63;
+    OM_PWM->PWMCON = 0x00000002;               // 通道0使能
+}
+
+/*******************************************************************************
+* 函数名称: deco_led_pwm_on()
+* 功能描述: 装饰灯亮(PWM 调光): P23 供高, P01 交给 PWM 输出
+* 输入参数： 无
+* 输出参数： 无
+* 说    明: 级别有变化才重新配置 PWM; 本函数 15ms 周期调用
+******************************************************************************/
+void deco_led_pwm_on(void)
+{
+    if(led_light_lev != led_light_lev_bak)
+    {
+        led_light_lev_bak = led_light_lev;
+        deco_pwm_init();
+    }
+
+    OM_GPIO0->DATAOUTSET = (1u<<DECO_LED_P_PIN);
+    OM_GPIO0->OUTENSET = (1u<<DECO_LED_P_PIN);
+    OM_GPIO0->OUTENCLR = (1u<<DECO_LED_N_PIN); // P01 释放给 PWM
+    OM_PWM->PWMCON = 0x00000002;
+}
+
+/*******************************************************************************
+* 函数名称: deco_led_pwm_off()
+* 功能描述: 装饰灯灭: PWM 通道关, 两脚输出低(与原 mDECO_LED_OFF 相同, 不反偏)
+* 输入参数： 无
+* 输出参数： 无
+* 说    明: 休眠/未连接/灯光被关时调用
+******************************************************************************/
+void deco_led_pwm_off(void)
+{
+    OM_PWM->PWMCON = 0x00000000;
+    mDECO_LED_OFF;
+}
 
 /*******************************************************************************
 * 函数名称: device_led_on()
@@ -143,13 +208,13 @@ void device_led_process(void)
 {
     rtc_cur_value = drv_rtc_read(OM_RTC);
 
-    if(ble_24g_ctrl&bom6239_sync_ok)
+    if((ble_24g_ctrl&bom6239_sync_ok)&&(bled_bright_en))
     {                                           // 装饰灯: 键盘能用才亮 = 蓝牙链路已加密且 HID 已就绪 / 2.4G 已同步接收器,
-        mDECO_LED_ON;                           // 回连、对码、找接收器时灭。休眠由 mouse_periph_wakeup_enable()
-    }                                           // 关灯, 睡眠里不调本函数, 醒来后在这里按连接状态再开
+        deco_led_pwm_on();                      // 回连、对码、找接收器时灭。休眠由 mouse_periph_wakeup_enable()
+    }                                           // 关灯, 睡眠里不调本函数, 醒来后在这里按连接状态再开(PWM 调光)
     else
     {
-        mDECO_LED_OFF;
+        deco_led_pwm_off();
     }
 
     if(iDEVICE_TYPE_USB != device_type)

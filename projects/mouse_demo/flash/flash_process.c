@@ -155,6 +155,9 @@ void laod_defaut_status(void)
 
     key_ctrl &= ~bwin_lock_status;
     key_ctrl |= bwin_mac_sataus;
+
+    bled_bright_en = true;                      // 默认开灯(false 表示已被灯光键关掉)
+    led_light_lev = iLED_LEV_4;                 // 装饰灯默认最亮(与 GPIO 直亮一致)
 }
 
 /*******************************************************************************
@@ -198,6 +201,14 @@ void laod_mouse_status(void)
             key_ctrl &= ~bwin_mac_sataus;
             if(sys_mode&(1<<(device_type&0x07)))
                 key_ctrl |= bwin_mac_sataus;
+
+            bled_bright_en = true;
+            if(flash_fifo[i+5]&(1<<7))          // 灯光开关, 掉电保持: bit7=已关灯, 旧记录无此位=开灯
+                bled_bright_en = false;
+
+            led_light_lev = (flash_fifo[i+5]&0x07);     // 装饰灯调光级别 bit0~2, 0/超界=旧记录, 取最亮
+            if((iLED_LEV_1 > led_light_lev) || (iLED_LEV_MAX < led_light_lev))
+                led_light_lev = iLED_LEV_4;
 
             report_24g = ((report_dpi[0]>>4)&0x03);
             report_usb = ((report_dpi[0]>>6)&0x03);
@@ -389,7 +400,9 @@ __attribute__((noinline)) void flash_save_status(void)
         sys_mode |= (1<<(device_type&0x07));
     dat_temp[4] = sys_mode;
 
-    dat_temp[5] = 0;                            // 原灯光模式, 本机无背光
+    dat_temp[5] = (led_light_lev&0x07);         // bit0~2 装饰灯调光级别
+    if(false == bled_bright_en)                 // 灯光开关, 掉电保持: 关灯才置 bit7, 与旧记录兼容(默认开灯)
+        dat_temp[5] |= (1<<7);
     dat_temp[6] = (key_mode&0x03);
     dat_temp[6] |= ((bt_index<<2)&0x0C);
     dat_temp[6] |= ((device_type<<4)&0x70);

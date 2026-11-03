@@ -29,7 +29,7 @@ unsigned char           const   matrixkey_mac_fn_tbl[] =
     iSTD_NULL,           iKEY_TYPE_STD|iKEY_PRESS|iRIGHT_CTRL,
     iMMK_CALCULATOR_L,   iKEY_TYPE_MMK | iMMK_CALCULATOR_H,    // C17 R5 计算器(Calculator)
     iSTD_NULL,           iKEY_TYPE_STD|iKEY_PRESS|iLEFT_CTRL,
-    iMMK_VOLUMEUP_L,    iKEY_TYPE_MMK | iMMK_VOLUMEUP_H,       // FN+F5 音量+
+    iLED_BRIGHT_SUB,    iKEY_TYPE_SPECIAL,                     // FN+F5 背光灯-
 // C1
     iSTD_Q,              iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_TAB,            iKEY_TYPE_STD|iKEY_PRESS,
@@ -50,9 +50,9 @@ unsigned char           const   matrixkey_mac_fn_tbl[] =
     iMODE_KEY_BT1,       iKEY_TYPE_SPECIAL,
 // C3
     iSTD_E,              iKEY_TYPE_STD|iKEY_PRESS,
-    iMMK_MEDIA_SELECT_L, iKEY_TYPE_MMK | iMMK_MEDIA_SELECT_H,  // FN+F3 音乐
+    iMMK_MAC_MCONTROL_L, iKEY_TYPE_MMK | iMMK_MAC_MCONTROL_H,  // FN+F3 任务窗口(Mission Control)
     iSTD_D,              iKEY_TYPE_STD|iKEY_PRESS,
-    iMMK_VOLUMEDOWN_L,  iKEY_TYPE_MMK | iMMK_VOLUMEDOWN_H,     // FN+F4 音量-
+    iMMK_MAC_LAUNCHPAD_L, iKEY_TYPE_MMK | iMMK_MAC_LAUNCHPAD_H, // FN+F4 控制台(Launchpad)
     iSTD_C,              iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_NULL,           iKEY_TYPE_INVALID,
     iMMK_BRIGHT_ADD_L,  iKEY_TYPE_MMK | iMMK_BRIGHT_ADD_H,     // FN+F2 亮度+
@@ -79,19 +79,19 @@ unsigned char           const   matrixkey_mac_fn_tbl[] =
     iSTD_I,              iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_SQUARE_BRACKET_RIGHT, iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_K,              iKEY_TYPE_STD|iKEY_PRESS,
-    iMMK_MUTE_L,        iKEY_TYPE_MMK | iMMK_MUTE_H,           // FN+F6 静音
+    iLED_BRIGHT_ADD,    iKEY_TYPE_SPECIAL,                     // FN+F6 背光灯+
     iSTD_COMMA,          iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_KEYBOARD_RO,    iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_ADD,            iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_8,              iKEY_TYPE_STD|iKEY_PRESS,
 // C7
-    iSTD_O,              iKEY_TYPE_STD|iKEY_PRESS,
-    iMMK_PREV_TRACK_L,  iKEY_TYPE_MMK | iMMK_PREV_TRACK_H,     // FN+F7 上一首
+    iKEY_MAC,            iKEY_TYPE_SPECIAL,
+    iMMK_PREV_TRACK_L,  iKEY_TYPE_MMK | iMMK_PREV_TRACK_H,     // FN+F7 上一曲
     iSTD_L,              iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_NULL,           iKEY_TYPE_INVALID,
     iSTD_FULLSTOP,       iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_APP,            iKEY_TYPE_STD|iKEY_PRESS,
-    iMMK_NEXT_TRACK_L,  iKEY_TYPE_MMK | iMMK_NEXT_TRACK_H,     // FN+F8 下一首
+    iMMK_PLAY_PAUSE_L,  iKEY_TYPE_MMK | iMMK_PLAY_PAUSE_H,     // FN+F8 播放/暂停
     iSTD_9,              iKEY_TYPE_STD|iKEY_PRESS,
 // C8
     iKEY_WIN,            iKEY_TYPE_SPECIAL,
@@ -103,8 +103,8 @@ unsigned char           const   matrixkey_mac_fn_tbl[] =
     iSTD_SUBTRACT,       iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_0,              iKEY_TYPE_STD|iKEY_PRESS,
 // C9
-    iSTD_SCROLL,         iKEY_TYPE_STD|iKEY_PRESS,
-    iKEY_WIN_LOCK,      iKEY_TYPE_SPECIAL,                     // FN+WIN 锁WIN (C16 R1 左WIN)
+    iLED_OFF,            iKEY_TYPE_SPECIAL,
+    iKEY_WIN_LOCK,       iKEY_TYPE_SPECIAL,                     // FN+WIN 锁WIN (C16 R1 左WIN)
     iMODE_KEY_FN,        iKEY_TYPE_SPECIAL,                         // iKEY_INDEX_FN
     iSTD_NULL,           iKEY_TYPE_STD|iKEY_PRESS|iLEFT_ALT,
     iSTD_NULL,           iKEY_TYPE_STD|iKEY_PRESS|iRIGHT_GUI,       // C17 R2
@@ -115,11 +115,11 @@ unsigned char           const   matrixkey_mac_fn_tbl[] =
     iSTD_NULL,           iKEY_TYPE_INVALID,
     iSTD_BACKSPACE,      iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_BACKSLASH,      iKEY_TYPE_STD|iKEY_PRESS,
-    iMMK_WWW_HOME_L,    iKEY_TYPE_MMK | iMMK_WWW_HOME_H,       // FN+F11 浏览器
+    iMMK_VOLUMEDOWN_L,  iKEY_TYPE_MMK | iMMK_VOLUMEDOWN_H,     // FN+F11 音量-
     iSTD_ENTER,          iKEY_TYPE_STD|iKEY_PRESS,
-    iMMK_MAIL_L,        iKEY_TYPE_MMK | iMMK_MAIL_H,           // FN+F12 邮件
-    iMMK_PLAY_PAUSE_L,  iKEY_TYPE_MMK | iMMK_PLAY_PAUSE_H,     // FN+F9 播放/暂停
-    iMMK_STOP_L,        iKEY_TYPE_MMK | iMMK_STOP_H,           // FN+F10 停止
+    iMMK_VOLUMEUP_L,    iKEY_TYPE_MMK | iMMK_VOLUMEUP_H,       // FN+F12 音量+
+    iMMK_NEXT_TRACK_L,  iKEY_TYPE_MMK | iMMK_NEXT_TRACK_H,     // FN+F9 下一曲
+    iMMK_MUTE_L,        iKEY_TYPE_MMK | iMMK_MUTE_H,           // FN+F10 静音
 // C11
     iSTD_NUMPAD7,        iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_NUMPAD4,        iKEY_TYPE_STD|iKEY_PRESS,

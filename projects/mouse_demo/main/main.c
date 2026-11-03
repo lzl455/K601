@@ -131,7 +131,7 @@ void mouse_periph_wakeup_enable(uint8_t mask)
 
     if(mask & WAKEUP_BTN_MASK) { /* button only faling edge wakeup*/
         bperiph_int = 0;                    // 只记本次休眠里的按键唤醒(蓝牙模式下别处不清, LEVEL2 充电时按它复位)
-        mDECO_LED_OFF;                      // 进入休眠: 装饰灯灭
+        deco_led_pwm_off();                 // 进入休眠: 装饰灯灭(PWM 通道关+两脚拉低)
         MATRX_ALL_LOW;
         KEY_EX_LOW;
         OM_PMU->PAD_PU_CTRL_1 = 0x02000000;  // 睡眠只留 P34(CHR_OK) 150K 上拉; P20/P36 模式开关、P37 无上下拉

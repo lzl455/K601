@@ -17,6 +17,15 @@
 //-----------------------------------------------------------------------------;
 // 配置区
 //
+enum led_level
+{
+    iLED_LEV_MIN=0,             // 最暗(不用, 只作下限)
+    iLED_LEV_1 = 1,
+    iLED_LEV_2 = 2,
+    iLED_LEV_3 = 3,
+    iLED_LEV_4 = 4,             // 最亮
+    iLED_LEV_MAX = 4,
+};
 
 //=============================================================================;
 // 内部定义外部引用区                                                          ;
@@ -28,6 +37,8 @@
 
 
 extern uint32_t                 exled_rtc_count;    // 54E 显示刷新节拍(定义在 led.c)
+extern bool                     bled_bright_en;     // 灯光开关, true=亮(默认), 掉电保持(定义在 led.c)
+extern enum led_level           led_light_lev;      // 装饰灯调光级别 1~4, 掉电保持(定义在 led.c)
 
 //-----------------------------------------------------------------------------;
 // 函数引用
@@ -37,6 +48,8 @@ extern void disp_off(void);
 extern void disp_refresh(void);
 extern void device_led_on(void);
 extern void device_led_off(void);
+extern void deco_led_pwm_on(void);                  // 装饰灯 PWM 调光亮(P23 供高, P01 交 PWM)
+extern void deco_led_pwm_off(void);                 // 装饰灯灭(PWM 关, 两脚输出低)
 
 extern void device_led_process(void);
 extern void logo_process(void);

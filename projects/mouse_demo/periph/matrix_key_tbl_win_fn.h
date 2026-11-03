@@ -79,22 +79,22 @@ unsigned char           const   matrixkey_win_fn_tbl[] =
     iSTD_I,              iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_SQUARE_BRACKET_RIGHT, iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_K,              iKEY_TYPE_STD|iKEY_PRESS,
-    iMMK_NEXT_TRACK_L,  iKEY_TYPE_MMK | iMMK_NEXT_TRACK_H,     // FN+F6 下一首
+    iMMK_NEXT_TRACK_L,   iKEY_TYPE_MMK | iMMK_NEXT_TRACK_H,     // FN+F6 下一首
     iSTD_COMMA,          iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_KEYBOARD_RO,    iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_ADD,            iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_8,              iKEY_TYPE_STD|iKEY_PRESS,
 // C7
     iKEY_MAC,            iKEY_TYPE_SPECIAL,
-    iMMK_PLAY_PAUSE_L,  iKEY_TYPE_MMK | iMMK_PLAY_PAUSE_H,     // FN+F7 播放/暂停
+    iMMK_PLAY_PAUSE_L,   iKEY_TYPE_MMK | iMMK_PLAY_PAUSE_H,     // FN+F7 播放/暂停
     iSTD_L,              iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_NULL,           iKEY_TYPE_INVALID,
     iSTD_FULLSTOP,       iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_APP,            iKEY_TYPE_STD|iKEY_PRESS,
-    iMMK_STOP_L,        iKEY_TYPE_MMK | iMMK_STOP_H,           // FN+F8 停止
+    iMMK_STOP_L,         iKEY_TYPE_MMK | iMMK_STOP_H,           // FN+F8 停止
     iSTD_9,              iKEY_TYPE_STD|iKEY_PRESS,
 // C8
-    iSTD_P,              iKEY_TYPE_STD|iKEY_PRESS,
+    iKEY_WIN,            iKEY_TYPE_SPECIAL,
     iSTD_SQUARE_BRACKET_LEFT, iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_SEMICOLON,      iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_QUOTATION_SIGN, iKEY_TYPE_STD|iKEY_PRESS,
@@ -103,8 +103,8 @@ unsigned char           const   matrixkey_win_fn_tbl[] =
     iSTD_SUBTRACT,       iKEY_TYPE_STD|iKEY_PRESS,
     iSTD_0,              iKEY_TYPE_STD|iKEY_PRESS,
 // C9
-    iSTD_SCROLL,         iKEY_TYPE_STD|iKEY_PRESS,
-    iKEY_WIN_LOCK,      iKEY_TYPE_SPECIAL,                     // FN+WIN 锁WIN (C16 R1 左WIN)
+    iLED_OFF,            iKEY_TYPE_SPECIAL,
+    iKEY_WIN_LOCK,       iKEY_TYPE_SPECIAL,                     // FN+WIN 锁WIN (C16 R1 左WIN)
     iMODE_KEY_FN,        iKEY_TYPE_SPECIAL,                         // iKEY_INDEX_FN
     iSTD_NULL,           iKEY_TYPE_STD|iKEY_PRESS|iLEFT_ALT,
     iSTD_NULL,           iKEY_TYPE_STD|iKEY_PRESS|iRIGHT_GUI,       // C17 R2
