@@ -27,7 +27,7 @@
 bool                            bdevice_led_status;
 bool                            bled_bright_en;
 enum led_level                  led_light_lev;
-enum led_level                  led_light_lev_bak = iLED_LEV_MAX;
+enum led_level                  led_light_lev_bak = iLED_LEV_MIN;  // 调光级别只用 1~4, 初值 MIN 保证第一次亮灯先 deco_pwm_init()
 
 uint8_t                         device_conn_index=0;
 uint8_t                         device_hint_count;
@@ -45,11 +45,11 @@ extern bool                     b24g_nromal;
 
 /*******************************************************************************
 * 函数名称: deco_pwm_init()
-* 功能描述: 装饰灯 PWM 调光初始化(移植自 AK103): 固定导通宽度 PWMDC0=63,
-*           拉长周期 PWMPRD 分 4 级调光。P01(负极)由 PWM 通道0驱动, 低电平亮
+* 功能描述: 装饰灯 PWM 调光初始化(移植自 AK103): 固定导通宽度 PWMDC1=63,
+*           拉长周期 PWMPRD 分 4 级调光。P01(负极)由 PWM 通道1驱动, 低电平亮
 * 输入参数： 无
 * 输出参数： 无
-* 说    明: PWMCR0=1 通道0初始电平高, PWMCR1=0 有效电平低(亮)
+* 说    明: PWMCR0 bit1=1 通道1初始电平高, PWMCR1 bit1=0 有效电平低(亮)
 ******************************************************************************/
 void deco_pwm_init(void)
 {
@@ -67,8 +67,8 @@ void deco_pwm_init(void)
     else
         OM_PWM->PWMPRD = 512;
 
-    OM_PWM->PWMDC0 = 63;
-    OM_PWM->PWMCON = 0x00000002;               // 通道0使能
+    OM_PWM->PWMDC1 = 63;                       // 通道1 = P01, 和 PWMCON/PWMCR0 的 bit1 对应
+    OM_PWM->PWMCON = 0x00000002;               // 通道1使能
 }
 
 /*******************************************************************************
