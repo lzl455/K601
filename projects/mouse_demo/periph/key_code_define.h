@@ -344,7 +344,7 @@
 #define iMMK_MAC_MCONTROL_H     0x02
 #define iMMK_MAC_MCONTROL_L     0x9F              // MAC 任务窗口(Mission Control)
 #define iMMK_MAC_LAUNCHPAD_H    0x02
-#define iMMK_MAC_LAUNCHPAD_L    0xA1              // MAC 控制台(Launchpad)
+#define iMMK_MAC_LAUNCHPAD_L    0xA0              // MAC 控制台(Launchpad)
 
 #define iMMK_NEXT_TRACK_H       0x00
 #define iMMK_NEXT_TRACK_L       0xB5

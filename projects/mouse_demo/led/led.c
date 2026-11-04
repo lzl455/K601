@@ -27,7 +27,7 @@
 bool                            bdevice_led_status;
 bool                            bled_bright_en;
 enum led_level                  led_light_lev;
-enum led_level                  led_light_lev_bak = iLED_LEV_MIN;  // 调光级别只用 1~4, 初值 MIN 保证第一次亮灯先 deco_pwm_init()
+enum led_level                  led_light_lev_bak = iLED_LEV_MIN;  // 调光级别 1=关灯(不走 PWM), 2~5 亮; 初值 MIN 保证第一次亮灯先 deco_pwm_init()
 
 uint8_t                         device_conn_index=0;
 uint8_t                         device_hint_count;
@@ -45,29 +45,33 @@ extern bool                     b24g_nromal;
 
 /*******************************************************************************
 * 函数名称: deco_pwm_init()
-* 功能描述: 装饰灯 PWM 调光初始化(移植自 AK103): 固定导通宽度 PWMDC1=63,
-*           拉长周期 PWMPRD 分 4 级调光。P01(负极)由 PWM 通道1驱动, 低电平亮
+* 功能描述: 装饰灯 PWM 调光初始化(移植自 AK103): 固定点亮脉冲宽度, 拉长周期
+*           PWMPRD 分级调光(级别 2~5, 1=关灯不进来)。P01(负极)由 PWM 通道1驱动, 低电平亮
 * 输入参数： 无
 * 输出参数： 无
-* 说    明: PWMCR0 bit1=1 通道1初始电平高, PWMCR1 bit1=0 有效电平低(亮)
+* 说    明: 手册 16 章: 周期=(PWMPRD+1)拍, PWMDCj=N 是无效电平宽度(N+1拍),
+*           有效电平宽度=M-N。装饰灯低电平亮, 取无效电平=低(亮), 有效电平=高(灭):
+*           PWMCR0 bit1=0 初始(无效)电平低, PWMCR1 bit1=1 有效电平高。
+*           亮脉冲固定 N+1=64 拍, 占空比=64/(M+1),
+*           档位 2~5 对应 M=256/192/128/64 -> 24.9%/33.2%/49.6%/98.5%
 ******************************************************************************/
 void deco_pwm_init(void)
 {
     DRV_RCC_CLOCK_ENABLE(RCC_CLK_PWM, 1U);
-    OM_PWM->PWMCR0 = 0x00000002;
-    OM_PWM->PWMCR1 = 0x00000000;
+    OM_PWM->PWMCR0 = 0x00000000;               // 通道1初始(无效)电平低 = 亮
+    OM_PWM->PWMCR1 = 0x00000002;               // 通道1有效电平高 = 灭
     OM_PWM->PWMDIV = 0x00000003;               // 32 分频
 
-    if(iLED_LEV_4 == led_light_lev)
+    if(iLED_LEV_5 == led_light_lev)
         OM_PWM->PWMPRD = 64;
-    else if(iLED_LEV_3 == led_light_lev)
+    else if(iLED_LEV_4 == led_light_lev)
         OM_PWM->PWMPRD = 128;
-    else if(iLED_LEV_2 == led_light_lev)
-        OM_PWM->PWMPRD = 256;
+    else if(iLED_LEV_3 == led_light_lev)
+        OM_PWM->PWMPRD = 192;
     else
-        OM_PWM->PWMPRD = 512;
+        OM_PWM->PWMPRD = 256;
 
-    OM_PWM->PWMDC1 = 63;                       // 通道1 = P01, 和 PWMCON/PWMCR0 的 bit1 对应
+    OM_PWM->PWMDC1 = 63;                       // 通道1 = P01; 无效(低=亮)电平宽度 N, 亮脉冲=N+1=64 拍
     OM_PWM->PWMCON = 0x00000002;               // 通道1使能
 }
 
@@ -208,9 +212,9 @@ void device_led_process(void)
 {
     rtc_cur_value = drv_rtc_read(OM_RTC);
 
-    if((ble_24g_ctrl&bom6239_sync_ok)&&(bled_bright_en))
+    if((ble_24g_ctrl&bom6239_sync_ok)&&(bled_bright_en)&&(iLED_LEV_1 != led_light_lev))
     {                                           // 装饰灯: 键盘能用才亮 = 蓝牙链路已加密且 HID 已就绪 / 2.4G 已同步接收器,
-        deco_led_pwm_on();                      // 回连、对码、找接收器时灭。休眠由 mouse_periph_wakeup_enable()
+        deco_led_pwm_on();                      // 回连、对码、找接收器时灭; 最低档(1)=关灯。休眠由 mouse_periph_wakeup_enable()
     }                                           // 关灯, 睡眠里不调本函数, 醒来后在这里按连接状态再开(PWM 调光)
     else
     {

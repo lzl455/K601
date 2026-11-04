@@ -157,7 +157,7 @@ void laod_defaut_status(void)
     key_ctrl |= bwin_mac_sataus;
 
     bled_bright_en = true;                      // 默认开灯(false 表示已被灯光键关掉)
-    led_light_lev = iLED_LEV_4;                 // 装饰灯默认最亮(与 GPIO 直亮一致)
+    led_light_lev = iLED_LEV_5;                 // 装饰灯默认最亮(与 GPIO 直亮一致)
 }
 
 /*******************************************************************************
@@ -206,9 +206,19 @@ void laod_mouse_status(void)
             if(flash_fifo[i+5]&(1<<7))          // 灯光开关, 掉电保持: bit7=已关灯, 旧记录无此位=开灯
                 bled_bright_en = false;
 
-            led_light_lev = (flash_fifo[i+5]&0x07);     // 装饰灯调光级别 bit0~2, 0/超界=旧记录, 取最亮
-            if((iLED_LEV_1 > led_light_lev) || (iLED_LEV_MAX < led_light_lev))
-                led_light_lev = iLED_LEV_4;
+            led_light_lev = (flash_fifo[i+5]&0x07);     // 装饰灯调光级别 bit0~2(1=关灯, 2~5 亮)
+            if(flash_fifo[i+5]&(1<<3))                  // bit3=5档格式标记, 新记录直接用 1~5
+            {
+                if((iLED_LEV_1 > led_light_lev) || (iLED_LEV_MAX < led_light_lev))
+                    led_light_lev = iLED_LEV_5;         // 0/超界=异常, 取最亮
+            }
+            else                                        // 旧 4 档记录(1~4 全亮): +1 映射到新 2~5 档, 实际亮度不变
+            {
+                if((iLED_LEV_1 > led_light_lev) || (iLED_LEV_4 < led_light_lev))
+                    led_light_lev = iLED_LEV_5;
+                else
+                    led_light_lev++;
+            }
 
             report_24g = ((report_dpi[0]>>4)&0x03);
             report_usb = ((report_dpi[0]>>6)&0x03);
@@ -400,7 +410,8 @@ __attribute__((noinline)) void flash_save_status(void)
         sys_mode |= (1<<(device_type&0x07));
     dat_temp[4] = sys_mode;
 
-    dat_temp[5] = (led_light_lev&0x07);         // bit0~2 装饰灯调光级别
+    dat_temp[5] = (led_light_lev&0x07);         // bit0~2 装饰灯调光级别(1=关灯, 2~5 亮)
+    dat_temp[5] |= (1<<3);                      // bit3=5档格式标记, 旧 4 档记录无此位, 读回时 +1 换算
     if(false == bled_bright_en)                 // 灯光开关, 掉电保持: 关灯才置 bit7, 与旧记录兼容(默认开灯)
         dat_temp[5] |= (1<<7);
     dat_temp[6] = (key_mode&0x03);

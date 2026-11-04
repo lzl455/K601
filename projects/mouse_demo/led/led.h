@@ -19,12 +19,13 @@
 //
 enum led_level
 {
-    iLED_LEV_MIN=0,             // 最暗(不用, 只作下限)
-    iLED_LEV_1 = 1,
+    iLED_LEV_MIN=0,             // 下限(不用, 只作边界)
+    iLED_LEV_1 = 1,             // 最低档: 关灯
     iLED_LEV_2 = 2,
     iLED_LEV_3 = 3,
-    iLED_LEV_4 = 4,             // 最亮
-    iLED_LEV_MAX = 4,
+    iLED_LEV_4 = 4,
+    iLED_LEV_5 = 5,             // 最亮
+    iLED_LEV_MAX = 5,
 };
 
 //=============================================================================;
@@ -38,7 +39,7 @@ enum led_level
 
 extern uint32_t                 exled_rtc_count;    // 54E 显示刷新节拍(定义在 led.c)
 extern bool                     bled_bright_en;     // 灯光开关, true=亮(默认), 掉电保持(定义在 led.c)
-extern enum led_level           led_light_lev;      // 装饰灯调光级别 1~4, 掉电保持(定义在 led.c)
+extern enum led_level           led_light_lev;      // 装饰灯调光级别 1=关灯, 2~5 亮, 掉电保持(定义在 led.c)
 
 //-----------------------------------------------------------------------------;
 // 函数引用
